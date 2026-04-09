@@ -187,3 +187,8 @@ backup/
 .vscode/
 node_modules/
 tmp/
+# Production
+/staticfiles/
+*.pyc
+__pycache__/
+.env
