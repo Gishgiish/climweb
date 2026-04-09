@@ -85,7 +85,7 @@ RUN python3 -m venv /climweb/venv
 
 ENV PIP_CACHE_DIR=/tmp/climweb_pip_cache
 # hadolint ignore=SC1091,DL3042
-RUN --mount=type=cache,mode=777,target=$PIP_CACHE_DIR,uid=$UID,gid=$GID . /climweb/venv/bin/activate && \
+RUN --mount=type=cache,id=pip-cache,target=$PIP_CACHE_DIR . /climweb/venv/bin/activate && \
      pip3 install  -r /climweb/requirements/base.txt
 
 COPY --chown=$UID:$GID ./climweb /climweb/web
