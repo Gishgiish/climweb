@@ -24,7 +24,7 @@ export default defineConfig({
                 "home-map": resolve('./src/home-map.js'),
             },
             output: {
-                dir: '../static/vue/',
+                dir: resolve(__dirname, '../../../static/vue/'),
                 entryFileNames: '[name].js',
             },
         },

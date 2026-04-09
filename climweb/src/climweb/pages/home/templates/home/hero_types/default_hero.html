@@ -29,7 +29,7 @@
         </div>
         
         <!-- Overlay to darken video for better text readability -->
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 1;"></div>
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1;"></div>
         <div class="hero-body pb-2" style="display: flex; align-items: center; position: relative; z-index: 2;">
 {% else %}
     <!-- Image Banner (default) -->
@@ -96,7 +96,8 @@
                 </div>
                 {% if page.show_city_forecast %}
                     <div class="column is-7-desktop is-full-tablet is-full-mobile weather-widget-column"
-                         id="weather-widget-wrapper">
+                         id="weather-widget-wrapper"
+                         data-widget-url="{{ home_weather_widget_url }}">
                         {% include "weather/forecast_widget_skeleton_include.html" %}
                     </div>
                 {% endif %}

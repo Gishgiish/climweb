@@ -1,18 +1,26 @@
 {% extends 'base.html' %}
-{% load i18n static lazyimages_tags wagtailcore_tags wagtailiconchooser_tags bulma_tags %}
+{% load i18n static lazyimages_tags wagtailcore_tags wagtailiconchooser_tags %}
 {% block extra_css %}
     {{ block.super }}
     <link type="text/css" rel="stylesheet" href="{% static 'css/maplibre-gl.css' %}"/>
+    <style>
+    .contact-form .field { margin-bottom: 1rem; }
+    .contact-form label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+    .contact-form input, .contact-form textarea, .contact-form select {
+        width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;
+    }
+    .contact-form textarea { min-height: 120px; }
+    .contact-form .required label::after { content: " *"; color: red; }
+    .contact-form .helptext { font-size: 0.85rem; color: #666; margin-top: 0.25rem; }
+    .contact-form .errorlist { color: red; list-style: none; padding: 0; margin: 0.25rem 0; }
+    </style>
 {% endblock extra_css %}
 
 {% block content %}
     <main class="is-index">
         <section>
             <div class="container">
-                <h2 class="section-title center">{{ page.title }}</h2>
-                <div id="contact-map" class=" {{ box_shadow }}"
-                     style="height:400px; width:100%; background-color:#cad2d3"></div>
-                <input type="hidden" value="{{ page.point }}" id="location"/>
+                <h2 class="section-title has-text-centered">{{ page.title }}</h2>
             </div>
         </section>
         <section>
@@ -21,63 +29,71 @@
                     <div class="column is-12">
                         <div class="columns">
                             <div class="column is-7 mr-3">
-                                <div class="card {{ box_shadow }}" style="background-color:#f8f9fb">
+                                <div class="card" style="background-color:#f8f9fb; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
                                     <div class="card-content mx-6">
-                                        <form action="{% pageurl page %}" method="POST">
+                                        <h3 class="title is-4" style="font-size:20px; margin-bottom:1rem;">
+                                            {% translate "Send us a message" %}
+                                        </h3>
+                                        <form action="{% pageurl page %}" method="POST" class="contact-form">
                                             {% csrf_token %}
-                                            {{ form|bulma }}
+                                            {% for field in form %}
+                                                <div class="field {% if field.field.required %}required{% endif %}">
+                                                    {{ field.label_tag }}
+                                                    {{ field }}
+                                                    {% if field.help_text %}
+                                                        <p class="helptext">{{ field.help_text }}</p>
+                                                    {% endif %}
+                                                    {% if field.errors %}
+                                                        <ul class="errorlist">
+                                                            {% for error in field.errors %}
+                                                                <li>{{ error }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
                                             <div class="field">
                                                 <button type="submit"
-                                                        class="button feedback-submit-button submit-button has-no-border">
+                                                        class="button is-medium"
+                                                        style="background:linear-gradient(135deg,#1B5E20,#2E7D32); color:#fff; border:none; border-radius:var(--border-radius);">
                                                     {% translate "Submit" %}
                                                 </button>
                                             </div>
                                         </form>
                                     </div>
-
                                 </div>
                             </div>
                             <div class="column ml-3">
                                 <div class="block pt-2">
-                                    {% if settings.base.OrganisationSetting.address %}
-                                        <div class="block ">
-                                            <h2 class="title" style="font-size:20px">
-                                                <span class="icon">
-                                                    {% svg_icon name="location" %}
-                                                </span>
-                                                {% translate "Address" %}
-                                            </h2>
-                                            {{ settings.base.OrganisationSetting.address|richtext }}
-                                        </div>
-                                    {% endif %}
+                                    <div class="block">
+                                        <h2 class="title" style="font-size:20px">
+                                            <span class="icon">
+                                                {% svg_icon name="location" %}
+                                            </span>
+                                            {% translate "Address" %}
+                                        </h2>
+                                        <p>Nairobi, Kenya</p>
+                                    </div>
 
-                                    {% if settings.base.OrganisationSetting.email or settings.base.OrganisationSetting.phone %}
-                                        <div class="block pt-5">
-                                            <h2 class="title" style="font-size:20px">
-                                                <span class="icon">
-                                                    {% svg_icon name="phone" %}
-                                                </span>
-                                                {% translate "Contact" %}
-                                            </h2>
-                                            {% if settings.base.OrganisationSetting.email %}
-                                                <p>{{ settings.base.OrganisationSetting.email }}</p>{% endif %}
-                                            {% if settings.base.OrganisationSetting.phone %}
-                                                <p>{{ settings.base.OrganisationSetting.phone }}</p>{% endif %}
-                                        </div>
-                                    {% endif %}
-                                    <div class="block pt-3" style="display: flex;">
-                                        {% for account in settings.base.OrganisationSetting.social_media_accounts %}
-                                            <a title="{{ account.value.name }}" href="{{ account.value.full_url }}"
-                                               target="_blank"
-                                               rel="noopener"
-                                               class="footer-social"
-                                               style="color:black"
-                                            >
-                                                <span class="social-icon">
-                                                    {% svg_icon name=account.value.icon %}
-                                                </span>
-                                            </a>
-                                        {% endfor %}
+                                    <div class="block pt-5">
+                                        <h2 class="title" style="font-size:20px">
+                                            <span class="icon">
+                                                {% svg_icon name="mail" %}
+                                            </span>
+                                            {% translate "Email" %}
+                                        </h2>
+                                        <p><a href="mailto:afriClimate.center@gmail.com">afriClimate.center@gmail.com</a></p>
+                                    </div>
+
+                                    <div class="block pt-5">
+                                        <h2 class="title" style="font-size:20px">
+                                            <span class="icon">
+                                                {% svg_icon name="phone" %}
+                                            </span>
+                                            {% translate "Phone" %}
+                                        </h2>
+                                        <p><a href="tel:+254728255980">+254 728 255 980</a></p>
+                                        <p><a href="tel:+254713003792">+254 713 003 792</a></p>
                                     </div>
                                 </div>
                             </div>

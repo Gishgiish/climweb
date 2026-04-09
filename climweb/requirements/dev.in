@@ -1,3 +1,5 @@
 -c base.txt
 coverage==7.6.10
 wagtail-factories
+playwright
+pytest-playwright

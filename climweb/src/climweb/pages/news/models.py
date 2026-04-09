@@ -164,6 +164,9 @@ class NewsPage(MetadataPageMixin, Page):
                                                  help_text=_("Should this appear in the homepage as"
                                                              " an alert/latest update ?"),
                                                  verbose_name=_("Is visible on homepage"))
+    news_location = models.CharField(max_length=255, blank=True, null=True,
+                                     help_text=_("Location this news is about (e.g., Nairobi, Mombasa, Kenya)"),
+                                     verbose_name=_("Location"))
     extra_links_heading = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Extra links heading"))
     
     external_links = StreamField([
@@ -180,6 +183,7 @@ class NewsPage(MetadataPageMixin, Page):
         FieldPanel('services', widget=CheckboxSelectMultiple),
         FieldPanel('projects', widget=CheckboxSelectMultiple),
         FieldPanel('tags'),
+        FieldPanel('news_location'),
         
         MultiFieldPanel([
             FieldPanel('extra_links_heading'),
@@ -215,10 +219,27 @@ class NewsPage(MetadataPageMixin, Page):
     
     @cached_property
     def card_props(self):
+        from wagtail.images import get_image_model
         card_tags = self.tags.all()
         
         card_text = self.get_meta_description()
-        card_image = self.get_meta_image_url(request=None)
+        
+        # Get image - try meta image first, but don't fall back to parent
+        meta_image = self.get_meta_image()
+        if meta_image:
+            card_image = meta_image.get_rendition('fill-400x300').url
+        else:
+            # Rotate through available images based on news ID
+            Image = get_image_model()
+            all_images = list(Image.objects.all())
+            if all_images:
+                # Use news ID to rotate through available images
+                img_index = (self.id or 0) % len(all_images)
+                card_image = all_images[img_index].get_rendition('fill-400x300').url
+            else:
+                # Fallback to a colored placeholder based on location
+                location_hash = hash(self.news_location or self.title) % 360
+                card_image = f"https://via.placeholder.com/400x300/{location_hash:06x}/ffffff?text={self.news_location or 'Climate'}"
         
         return {
             "card_image_type": "url",
@@ -228,7 +249,8 @@ class NewsPage(MetadataPageMixin, Page):
             "card_meta": date(self.date, 'd M Y'),
             "card_more_link": self.url,
             "card_tag": self.news_type,
-            "card_tags": card_tags
+            "card_tags": card_tags,
+            "card_location": self.news_location,
         }
     
     def get_meta_image(self):

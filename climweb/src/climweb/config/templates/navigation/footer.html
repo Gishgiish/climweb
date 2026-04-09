@@ -1,54 +1,65 @@
-{% load i18n static wagtailimages_tags wagtailsettings_tags wagtailcore_tags wagtailiconchooser_tags nmhs_cms_tags %}
-{% get_settings use_default_site=True %}
-{% wagtail_site as current_site %}
+{% load static wagtailcore_tags wagtailimages_tags %}
 
-<footer>
-    <div id="footer" class="footer is-desktop">
-        <div class="container">
-            <div class="columns is-mobile is-multiline" style="margin: 0">
-                <div class="column is-half-mobile is-one-quarter-desktop" style="margin-bottom: 20px">
-                    <div>
-                        <a class="footer-logo" href="{{ current_site.root_url }}">
-                            <figure class="image">
-                                {% if settings.base.OrganisationSetting.footer_logo %}
-                                    {% image settings.base.OrganisationSetting.footer_logo original as footer_logo %}
-                                    <img src="{{ footer_logo.url }}" alt="Logo">
-                                {% endif %}
-                            </figure>
-                        </a>
-                    </div>
-                </div>
-                {% for block in settings.base.NavigationSettings.footer_menu %}
-                    {% include_block block %}
-                {% endfor %}
-            </div>
-            <div class="columns is-mobile" style="margin-top: 40px">
-                <div class="column is-half">
-                    {% if settings.base.OrganisationSetting.name %}
-                        <p class="has-text-white footer-text">
-                            &copy; {{ settings.base.OrganisationSetting.name }} {% now 'Y' %}</p>
+<footer class="footer" id="contact-section">
+    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem;">
+        <div class="columns is-multiline" style="margin: -0.5rem;">
+            
+            <!-- Column 1: Company Info -->
+            <div class="column is-one-quarter-desktop is-full-mobile" style="padding: 0.5rem;">
+                <div style="margin-bottom: 1.5rem;">
+                    {% if settings.base.OrganisationSetting.footer_logo %}
+                        {% image settings.base.OrganisationSetting.footer_logo original as footer_logo %}
+                        <img src="{{ footer_logo.url }}" alt="AfriClimate Logo" style="max-width: 200px; height: auto; margin-bottom: 1rem;">
+                    {% else %}
+                        <h3 style="color: #FFFFFF; font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">AFRICLIMATE</h3>
                     {% endif %}
-                    <a
-                            href="https://github.com/wmo-raf/nmhs-cms"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style="color:#ababab; font-size: 12px;  font-weight:600">
-                        <span>
-                            {% translate "Powered by Climweb" %} v{% cms_version %}
-                        </span>
-                    </a>
-                </div>
-                <div class="column is-half" style="display: flex;justify-content: flex-end;">
-                    {% for account in settings.base.OrganisationSetting.social_media_accounts %}
-                        <a title="{{ account.value.name }}" href="{{ account.value.full_url }}" target="_blank"
-                           rel="noopener"
-                           class="footer-social"
-                        >
-                            <span class="social-icon">{% svg_icon name=account.value.icon %}</span>
-                        </a>
-                    {% endfor %}
+                    <p style="color: rgba(255,255,255,0.7); line-height: 1.6; font-size: 0.95rem;">
+                        Building climate resilience across Africa through participatory and inclusive community development.
+                    </p>
                 </div>
             </div>
+            
+            <!-- Column 2: Quick Links -->
+            <div class="column is-one-quarter-desktop is-half-mobile" style="padding: 0.5rem;">
+                <h4 style="color: #FFFFFF; font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem; border-bottom: 2px solid #4CAF50; padding-bottom: 0.5rem; display: inline-block;">Quick Links</h4>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 0.75rem;"><a href="/#about-us" style="color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.3s;">About Us</a></li>
+                    <li style="margin-bottom: 0.75rem;"><a href="/#services" style="color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.3s;">Our Services</a></li>
+                    <li style="margin-bottom: 0.75rem;"><a href="/news-updates/" style="color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.3s;">News & Updates</a></li>
+                    <li style="margin-bottom: 0.75rem;"><a href="/contact-us/" style="color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.3s;">Contact Us</a></li>
+                </ul>
+            </div>
+            
+            <!-- Column 3: Contact Info -->
+            <div class="column is-one-quarter-desktop is-full-mobile" style="padding: 0.5rem;">
+                <h4 style="color: #FFFFFF; font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem; border-bottom: 2px solid #4CAF50; padding-bottom: 0.5rem; display: inline-block;">Contact Us</h4>
+                <div style="color: rgba(255,255,255,0.8); line-height: 1.8; font-size: 0.95rem;">
+                    <p style="margin-bottom: 0.75rem;">
+                        <strong style="color: #4CAF50;">Email:</strong><br>
+                        <a href="mailto:africlimate.center@gmail.com" style="color: rgba(255,255,255,0.8); text-decoration: none;">africlimate.center@gmail.com</a>
+                    </p>
+                    <p style="margin-bottom: 0.75rem;">
+                        <strong style="color: #4CAF50;">Phone:</strong><br>
+                        +254 728 255 980<br>
+                        +254 713 003 792
+                    </p>
+                    <p style="margin-bottom: 0.75rem;">
+                        <strong style="color: #4CAF50;">Location:</strong><br>
+                        Kenya
+                    </p>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Copyright Bar -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 2.5rem; padding-top: 1.5rem; text-align: center;">
+            <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin: 0;">
+                &copy; {% now "Y" %} AfriClimate Center For Adaptation. All rights reserved.
+            </p>
+            <p style="color: rgba(255,255,255,0.4); font-size: 0.8rem; margin: 0.5rem 0 0;">
+                Powered by ClimWeb v1.0.9
+            </p>
         </div>
     </div>
 </footer>

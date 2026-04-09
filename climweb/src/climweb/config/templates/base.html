@@ -22,145 +22,98 @@
             {% meta_tags %}
         {% endif %}
     {% endblock %}
-
-    {% block favicon %}
-        {% if settings.base.OrganisationSetting.favicon %}
-            {# See https://developer.apple.com/design/human-interface-guidelines/ios/icons-and-images/app-icon/ #}
-            {% include 'favicon_include.html' with favicon_image=settings.base.OrganisationSetting.favicon %}
-        {% endif %}
-    {% endblock %}
-
-    <!--Force all links in the live preview panel to be opened in a new tab -->
-    {% if request.in_preview_panel %}
-        <base target="_blank" rel="noopener noreferrer">
-    {% endif %}
-
     
-    <link rel="stylesheet" type="text/css" href="{% static 'css/bulma.min.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/bulma-divider.min.css' %}">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap"
-          rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/animate.min.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/google-translate.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/navigation.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/cms_style.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/override.css' %}">
-    <link rel="stylesheet" href="{% static 'css/services_common.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/nmhs_cms.css' %}">
-
-    {# Global stylesheets #}
+    <title>
+        {% block title %}
+            {% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}
+        {% endblock %}
+        {% block title_suffix %}
+            {% if settings.base.OrganisationSetting.site_name %}
+                | {{ settings.base.OrganisationSetting.site_name }}
+            {% elif settings.base.IntegrationSettings.site_name %}
+                | {{ settings.base.IntegrationSettings.site_name }}
+            {% endif %}
+        {% endblock %}
+    </title>
+    
+    <link rel="stylesheet" href="{% static 'css/bulma.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/animate.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bulma-carousel.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bulma-divider.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bulma-timeline.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bulma-grid-only.css' %}">
+    <link rel="stylesheet" href="{% static 'css/common_cms.css' %}">
+    <link rel="stylesheet" href="{% static 'css/leaflet.css' %}">
+    <link rel="stylesheet" href="{% static 'css/maplibre-gl.css' %}">
+    <link rel="stylesheet" href="{% static 'css/accessibility.css' %}">
+    
     <style>
-        :root {
-            --primary-color: {{ primary_color }};
-            --primary-color-background: {{ primary_color }}25;
-            --secondary-color: {{ secondary_color }};
-            --border-radius: {{ border_radius }};
-            --primary-hover-color: {{ primary_hover_color }};
-        }
-
-        {% if settings.base.LanguageSettings.default_language|slice:":2" == "ar" %}
-            .section-subheader{
-                text-align:right !important;
-            }
-            h1,h2,h3,h4,h5,p{
-                text-align:right !important;
-            }
-
-            .table th {
-                text-align: right !important;
-            }
-
-            .has-text-left{
-                text-align: right !important;
-            }
-}
-        
-        {% endif %}
-
+    :root {
+        --africlimate-green: #2E7D32;
+        --africlimate-green-dark: #1B5E20;
+        --africlimate-green-light: #4CAF50;
+    }
+    .header-nav {
+        background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%) !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+        padding: 0.5rem 0 !important;
+    }
+    .header-nav .main-logo { color: #FFFFFF !important; }
+    .header-nav .main-logo img { max-height: 60px !important; width: auto !important; }
+    .header-nav .top-nav-item { color: rgba(255,255,255,0.9) !important; }
+    .header-nav .top-nav-item:hover { color: #FFFFFF !important; }
+    a { color: #2E7D32; }
+    a:hover { color: #1B5E20; }
+    .section-title { color: #1B5E20 !important; }
+    footer { background: linear-gradient(135deg, #263238 0%, #37474F 100%); }
+    footer a { color: rgba(255,255,255,0.8); }
+    footer a:hover { color: #4CAF50; }
     </style>
-    <script type="text/javascript" src="{% static 'js/jquery-3.6.3.min.js' %}"></script>
-    {% if request.user.is_authenticated or request.is_preview %} {% else %}
-        {% if settings.base.IntegrationSettings.ga_tracking_id %}
-            <!-- Global site tag (gtag.js) - Google Analytics -->
-            <script async
-                    src="https://www.googletagmanager.com/gtag/js?id={{ settings.base.IntegrationSettings.ga_tracking_id }}"></script>
-            <script>
-                window.dataLayer = window.dataLayer || [];
-
-                function gtag() {
-                    dataLayer.push(arguments);
-                }
-
-                gtag('js', new Date());
-
-                gtag('config', '{{settings.base.IntegrationSettings.ga_tracking_id}}');
-            </script>
-        {% endif %}
-    {% endif %}
-
-    {% block extra_css %}
-        {# Override this in templates to add extra stylesheets #}
-    {% endblock %}
+    
+    {% block extra_css %}{% endblock %}
+    
+    <!-- AfriClimate Branding CSS -->
+    <style>
+    :root {
+        --africlimate-green: #2E7D32;
+        --africlimate-green-dark: #1B5E20;
+        --africlimate-green-light: #4CAF50;
+    }
+    .header-nav {
+        background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%) !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+    }
+    .header-nav .main-logo { color: #FFFFFF !important; }
+    .header-nav .main-logo img { max-height: 60px !important; width: auto !important; }
+    .header-nav .top-nav-item { color: rgba(255,255,255,0.9) !important; }
+    .header-nav .top-nav-item:hover { color: #FFFFFF !important; }
+    a { color: #2E7D32; }
+    a:hover { color: #1B5E20; }
+    .section-title { color: #1B5E20 !important; }
+    footer { background: linear-gradient(135deg, #263238 0%, #37474F 100%); }
+    footer a { color: rgba(255,255,255,0.8); }
+    footer a:hover { color: #4CAF50; }
+    </style>
 </head>
-
-<body class="{% block body_class %}{% endblock %}">
-{% wagtailuserbar %}
-
-{% block navbar %}
-    {% include 'navigation/navbar.html' %}
-{% endblock navbar %}
-
-<div class="page-container is-medium">
+    
+    <body class="{% block body_class %}{% endblock %}" style="margin:0;padding:0;">
+    {% wagtailuserbar %}
+    
+    {% block navbar %}
+        {% include 'navigation/navbar.html' %}
+    {% endblock navbar %}
+    
     {% block content %}{% endblock %}
+    
     {% block footer %}
         {% include 'navigation/footer.html' %}
-    {% endblock %}
-</div>
-
-<!-- Global javascript -->
-
-<script type="text/javascript" src="{% static 'js/common_cms.js' %}"></script>
-
-<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-<script type="text/javascript" src="{% static 'js/progressively.js' %}"></script>
-<script>
-    function googleTranslateElementInit() {
-        new google.translate.TranslateElement(
-            {
-                pageLanguage: "{{settings.base.LanguageSettings.default_language}}",
-                includedLanguages: "{{settings.base.LanguageSettings.included_languages|join:"," }}",
-                layout: google.translate.TranslateElement.InlineLayout.HORIZONTAL,
-                autoDisplay: false
-            },
-            "google_language_translator"
-        );
-    }
-</script>
-<script src="{% static 'js/google-translate.js' %}"></script>
-<script type="text/javascript">
-    progressively.init()
-</script>
-
-<script src="{% static 'js/bulma-toast.min.js' %}"></script>
-
-<script>
-    bulmaToast.setDefaults({
-        duration: 2500,
-        position: 'top-center',
-        closeOnClick: true,
-    })
-    {% if messages %}
-        {% for message in messages %}
-            const level = {{ message.level }}
-            const type = level === 25 ? "is-success" : level === 30 ? "is-warning" : level === 40 ? "is-error" : "is-info"
-            bulmaToast.toast({message: "{{ message }}", type: type})
-        {% endfor %}
-    {% endif %}
-</script>
-
-{% block extra_js %}
-    {# Override this in templates to add extra javascript #}
-{% endblock %}
-</body>
+    {% endblock footer %}
+    
+    <script src="{% static 'js/jquery-3.6.3.min.js' %}"></script>
+    <script src="{% static 'js/bulma-carousel.min.js' %}"></script>
+    <script src="{% static 'js/common_cms.js' %}"></script>
+    <script src="{% static 'js/accessibility.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+    </body>
 </html>

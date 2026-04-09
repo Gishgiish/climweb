@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block body_class %}template-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+    }
+    .page-title {
+        color: #1B5E20;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        border-bottom: 4px solid #4CAF50;
+        padding-bottom: 0.5rem;
+    }
+    .page-intro {
+        font-size: 1.2rem;
+        color: #546E7A;
+        margin-bottom: 2rem;
+        line-height: 1.8;
+    }
+    .page-body {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: #263238;
+    }
+    .page-body h2 {
+        color: #1B5E20;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    .page-body h3 {
+        color: #0288D1;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .page-body ul, .page-body ol {
+        margin: 1rem 0;
+        padding-left: 2rem;
+    }
+    .page-body li {
+        margin: 0.5rem 0;
+    }
+    .page-body a {
+        color: #2E7D32;
+        text-decoration: underline;
+    }
+    .page-body a:hover {
+        color: #1B5E20;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <h1 class="page-title">{{ page.seo_title|default:page.title }}</h1>
+    
+    {% if page.search_description %}
+    <div class="page-intro">
+        {{ page.search_description|linebreaks }}
+    </div>
+    {% endif %}
+    
+    <div class="page-body">
+        <!-- Content can be added via Admin Promote tab (search_description) -->
+        <!-- Or extend this template with RichTextField -->
+    </div>
+</div>
+{% endblock %}

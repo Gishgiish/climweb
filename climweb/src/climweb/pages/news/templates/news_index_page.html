@@ -3,91 +3,239 @@
 
 {% block extra_css %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/news.css' %}">
+    <style>
+    .news-page-header {
+        background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+        padding: 3rem 1.5rem;
+        text-align: center;
+        color: #fff;
+    }
+    .news-page-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .news-page-header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    .news-grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+    }
+    .news-card-item {
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .news-card-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    .news-card-item-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    .news-card-item-content {
+        padding: 1.5rem;
+    }
+    .news-card-item-tag {
+        display: inline-block;
+        background: #1B5E20;
+        color: #fff;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        margin-bottom: 0.75rem;
+    }
+    .news-card-item-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+    .news-card-item-title a {
+        color: #333;
+        text-decoration: none;
+    }
+    .news-card-item-title a:hover {
+        color: #1B5E20;
+    }
+    .news-card-item-snippet {
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+    .news-card-item-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        color: #999;
+    }
+    .news-card-item-more {
+        color: #1B5E20;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .news-card-item-more:hover {
+        text-decoration: underline;
+    }
+    .news-last-updated {
+        text-align: center;
+        padding: 1rem;
+        color: #666;
+        font-size: 0.85rem;
+        background: #f8f9fa;
+    }
+    @media (max-width: 768px) {
+        .news-grid-container {
+            grid-template-columns: 1fr;
+        }
+    }
+    </style>
 {% endblock %}
 
-{% block body_class %}{% endblock %}
+{% block body_class %}template-news{% endblock %}
 
 {% block content %}
     <main>
-        {% include 'hero.html' with page=page %}
-        {% if featured_news %}
-            <section class="featured-news-section" style="background-color: #f8f9fb;">
-                <div class="container">
-                    <h2 class="section-title center">
-                        {% translate "Featured News" %}
-                    </h2>
-                    {% include 'featured_item_include.html' with item_image_src=featured_news.card_props.card_image item_title=featured_news.title item_text=featured_news.listing_summary item_url=featured_news.url item_meta=featured_news.date item_tags=featured_news.tags %}
-                </div>
-            </section>
-        {% endif %}
+        <!-- News Header -->
+        <div class="news-page-header">
+            <h1>{% translate "News & Updates" %}</h1>
+            <p>{% translate "Stay informed about climate action and adaptation across Africa" %}</p>
+        </div>
 
-        <section class="all-news-section listing-section">
-            <h2 id="results" class="section-title center">
-                {% translate "All News Updates" %}
-            </h2>
-            <div class="container">
-                <div class="columns">
-                    <div class="column is-3 is-full-mobile">
-                        {% include 'news_filter_include.html' with filters=page.filters %}
+        <!-- News Grid -->
+        <div id="news-container">
+            <div class="news-grid-container">
+                {% if news %}
+                    {% for news_item in news %}
+                        <article class="news-card-item">
+                            {% if news_item.card_props.card_image %}
+                                <a href="{{ news_item.url }}">
+                                    <img class="news-card-item-image"
+                                         src="{{ news_item.card_props.card_image }}"
+                                         alt="{{ news_item.title }}"/>
+                                </a>
+                            {% endif %}
+                            <div class="news-card-item-content">
+                                {% if news_item.news_type %}
+                                    <span class="news-card-item-tag">{{ news_item.news_type }}</span>
+                                {% endif %}
+                                <h3 class="news-card-item-title">
+                                    <a href="{{ news_item.url }}">{{ news_item.title }}</a>
+                                </h3>
+                                {% if news_item.listing_summary %}
+                                    <p class="news-card-item-snippet">{{ news_item.listing_summary|truncatewords:25 }}</p>
+                                {% endif %}
+                                <div class="news-card-item-meta">
+                                    <span>{{ news_item.date|date:'d M Y' }}</span>
+                                    <a class="news-card-item-more" href="{{ news_item.url }}">
+                                        {% translate "Read More" %} →
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                {% else %}
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                        <p style="color: #666; font-size: 1.1rem;">{% translate "No news articles available yet." %}</p>
                     </div>
-                    <div class="column is-9 is-full-mobile">
-                        {% include 'news_list_include.html' with news=news %}
-                    </div>
-                </div>
+                {% endif %}
             </div>
-        </section>
+            <div class="news-last-updated" id="last-updated">
+                {% translate "Last updated" %}: <span id="update-time"></span>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if news.has_other_pages %}
+            <div style="text-align: center; padding: 2rem;">
+                {% if news.has_previous %}
+                    <a href="?page={{ news.previous_page_number }}" class="button" style="margin-right: 0.5rem;">
+                        ← {% translate "Previous" %}
+                    </a>
+                {% endif %}
+                <span style="padding: 0.5rem 1rem;">
+                    {% translate "Page" %} {{ news.number }} {% translate "of" %} {{ news.paginator.num_pages }}
+                </span>
+                {% if news.has_next %}
+                    <a href="?page={{ news.next_page_number }}" class="button" style="margin-left: 0.5rem;">
+                        {% translate "Next" %} →
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
     </main>
 {% endblock %}
 
 {% block extra_js %}
     <script>
-        $(document).ready(function () {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Display last updated time
+        var updateTime = document.getElementById('update-time');
+        if (updateTime) {
+            updateTime.textContent = new Date().toLocaleString('en-KE', {
+                timeZone: 'Africa/Nairobi',
+                hour: '2-digit',
+                minute: '2-digit',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
 
-            // If on smaller screens, collapse all filter items
-            const windowWidth = $(window).width();
-
-            if (windowWidth <= 768) {
-                //for  smaller devices
-                $('.results-filter .js-accordion-item').removeClass('active');
-            }
-
-            const listButton = $("#list-view-button");
-            const gridButton = $("#grid-view-button");
-            const wrapper = $(".results-list");
-            const resultItem = $(".result-list-item");
-
-
-            const params = getParams(window.location.href);
-
-            // mark checkboxes from params url, on load
-            markCheckboxesFromUrlParams('news-filter', params, function (params) {
-                if (params && params.view) {
-                    if (params.view === 'grid') {
-                        listButton.removeClass("active");
-                        gridButton.addClass("active");
-                        wrapper.removeClass("list-view").addClass("grid-view columns is-mobile is-multiline");
-                        resultItem.addClass("column is-one-third-desktop is-full-mobile");
-                    } else {
-                        gridButton.removeClass("active");
-                        listButton.addClass("active");
-                        wrapper.removeClass("grid-view columns is-mobile is-multiline").addClass("list-view");
-                        resultItem.removeClass("column is-one-third-desktop is-full-mobile");
+        // Auto-refresh news every hour (3600000 ms)
+        var refreshInterval = setInterval(function() {
+            fetch(window.location.href, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(response) {
+                if (response.ok) {
+                    return response.text();
+                }
+            })
+            .then(function(html) {
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(html, 'text/html');
+                var newContent = doc.getElementById('news-container');
+                var currentContent = document.getElementById('news-container');
+                if (newContent && currentContent) {
+                    currentContent.innerHTML = newContent.innerHTML;
+                    // Update the timestamp
+                    var newUpdateTime = document.getElementById('update-time');
+                    if (newUpdateTime) {
+                        newUpdateTime.textContent = new Date().toLocaleString('en-KE', {
+                            timeZone: 'Africa/Nairobi',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        });
                     }
                 }
+            })
+            .catch(function(error) {
+                console.log('News refresh failed:', error);
             });
+        }, 3600000); // 1 hour
 
-            const baseUrl = "{{ page.url }}";
-
-
-            filterChangeListener('news-filter', params, function (clickedEl, url_params) {
-                window.location.href = `${baseUrl}?${url_params}#results`;
-
-            });
-
+        // Clean up interval on page unload
+        window.addEventListener('beforeunload', function() {
+            clearInterval(refreshInterval);
         });
-
+    });
     </script>
-
 {% endblock %}
 
 

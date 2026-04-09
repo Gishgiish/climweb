@@ -43,9 +43,7 @@
                         <div class="dropdown-trigger">
                             <div class="top-nav-item">
                                 <span>{% translate "Language" %}</span>
-                                <span class="nav-icon">
-                                    {% svg_icon name="site" %}
-                                </span>
+                                <span class="nav-icon"><span style="width:16px;height:16px;display:inline-block;">{% svg_icon name="site" %}</span></span>
 
                             </div>
                         </div>
@@ -120,7 +118,7 @@
 </header>
 {% block extra_js %}
     <script>
-        const latestActiveAlertUrl = {% url 'latest_active_alert' %};
+        const latestActiveAlertUrl = "{% url 'latest_active_alert' %}";
 
         document.addEventListener('DOMContentLoaded', () => {
             const navbarBurgerEl = document.getElementById('navBurger')

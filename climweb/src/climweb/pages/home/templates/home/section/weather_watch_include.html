@@ -1,53 +1,79 @@
-{% load static nmhs_cms_tags wagtailiconchooser_tags i18n nmhs_cms_tags %}
+{% load static nmhs_cms_tags wagtailiconchooser_tags i18n %}
 
 {% get_current_language as LANGUAGE_CODE %}
 
 {% if self.show_weather_watch %}
-    {% if home_map_layer_svg_sprite %}
-        <div id="django-svg-data-sprite">
-            {{ home_map_layer_svg_sprite|safe }}
-        </div>
-    {% endif %}
-    <section class="weather-watch-section">
-        <div class="container">
-            <h2 class="section-title has-text-centered"
-                style=" font-weight:700">{{ page.weather_watch_header }}</h2>
-            <div class="columns is-justify-content-center is-mobile is-multiline weather-watch-container">
-                <div class="column is-one-quarter-desktop is-full-touch ">
-                    <div class="alerts-container" id="alerts-container">
-                        <div class="alerts-title">
-                            <img src="{% static 'img/CAPLogo.jpeg' %}" alt="" width="20"
-                                 style="border-radius:4px;">
-                            <h4>
-                                {% translate "Latest Weather Warnings" %}
-                            </h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="column is-three-quarters-desktop is-full-touch">
-                    <div id="home-map" style="position: relative;" data-map-settings-url="{{ home_map_settings_url }}"
-                         data-initial-bounds="{{ country_bounds }}"
-                         data-location-forecast-detail-url="{{ city_detail_page_url }}"
-                         data-language-code="{{ LANGUAGE_CODE }}"
-                         data-home-map-alerts-url="{{ home_map_alerts_url }}"
-                    >
+    <div class="columns is-justify-content-center is-mobile is-multiline weather-watch-container">
+        <div class="column is-full">
+            <!-- OpenWeatherMap Embed -->
+            <div id="weather-map-container" style="position: relative; width: 100%; height: 500px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <iframe 
+                    id="weather-map-iframe"
+                    src="https://openweathermap.org/weathermap?basemap=map&cities=true&layer=temp&lat=-0.0236&lon=37.9062&zoom=6"
+                    style="width: 100%; height: 100%; border: none;"
+                    allowfullscreen
+                    loading="lazy"
+                    title="Live Weather Map">
+                </iframe>
+                <!-- Loading overlay -->
+                <div id="weather-map-loading" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; z-index: 10;">
+                    <div style="text-align: center;">
+                        <div class="loader" style="border: 4px solid #f3f3f3; border-top: 4px solid #1B5E20; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
+                        <p style="color: #666;">Loading weather data...</p>
                     </div>
                 </div>
             </div>
-            {% if self.show_mapviewer_cta and self.mapviewer_cta_url %}
-                <div class="container mapviewer-explore">
-                    <div class="desc">
-                        {% translate "For more interactive data" %}
-                    </div>
-                    <a class="button is-dark has-text-white"
-                       style=" font-weight: 600;  border-radius: var(--border-radius);"
-                       href="{{ self.mapviewer_cta_url }}">
-                        <span>{{ self.mapviewer_cta_title }}</span>
-                        <span class="icon btn-icon">
-                            {% svg_icon name="arrow-right-full" %}
-                        </span>
-                    </a>
-                </div>
-            {% endif %}
-    </section>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="container weather-actions" style="display:flex;justify-content:center;gap:1rem;margin-top:1.5rem;flex-wrap:wrap;">
+        <a class="button is-medium has-text-white"
+           style="font-weight:600;border-radius:var(--border-radius);background:linear-gradient(135deg,#1B5E20,#2E7D32);"
+           href="/mapviewer/">
+            <span class="icon">{% svg_icon name="map" %}</span>
+            <span>{% translate "Explore Climate Maps" %}</span>
+        </a>
+    </div>
+    
+    <style>
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    </style>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var iframe = document.getElementById('weather-map-iframe');
+        var loading = document.getElementById('weather-map-loading');
+        
+        iframe.addEventListener('load', function() {
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        });
+        
+        // Fallback: hide loading after 5 seconds
+        setTimeout(function() {
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }, 5000);
+        
+        // Try to get user's location and center map
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var lat = position.coords.latitude;
+                var lon = position.coords.longitude;
+                var iframe = document.getElementById('weather-map-iframe');
+                var baseUrl = 'https://openweathermap.org/weathermap?basemap=map&cities=true&layer=temp&lat=' + lat + '&lon=' + lon + '&zoom=10';
+                iframe.src = baseUrl;
+            }, function() {
+                // If geolocation fails, keep default Kenya center
+                console.log('Geolocation not available, using default center');
+            });
+        }
+    });
+    </script>
 {% endif %}

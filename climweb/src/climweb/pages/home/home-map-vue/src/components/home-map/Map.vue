@@ -176,6 +176,8 @@ const initializeMap = async () => {
     }
   });
 
+  // Expose map instance globally for weather overlays
+  window.weatherMapInstance = map;
 
 };
 

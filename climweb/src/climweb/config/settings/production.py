@@ -5,6 +5,10 @@ try:
 except ImportError:
     pass
 
+# =============================================================================
+# PRODUCTION SETTINGS
+# =============================================================================
+
 WAGTAIL_ENABLE_UPDATE_CHECK = False
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -15,7 +19,6 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 MANIFEST_LOADER = {
     'cache': True,
-    # recommended True for production, requires a server restart to pick up new values from the manifest.
 }
 
 # Enable caching in production
@@ -37,13 +40,27 @@ else:
 EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD', default="")
 
+# =============================================================================
+# SECURITY SETTINGS
+# =============================================================================
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', cast=None, default=[])
-SECURE_CROSS_ORIGIN_OPENER_POLICY = env.str("SECURE_CROSS_ORIGIN_OPENER_POLICY", None)
+SECURE_CROSS_ORIGIN_OPENER_POLICY = env.str("SECURE_CROSS_ORIGIN_OPENER_POLICY", "same-origin")
 
 CORS_ALLOW_ALL_ORIGINS = False
-
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', cast=None, default=[])
+
+# Security headers
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', True)
+SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', 31536000)  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', True)
+SECURE_HSTS_PRELOAD = env.bool('SECURE_HSTS_PRELOAD', True)
+SECURE_BROWSER_XSS_FILTER = env.bool('SECURE_BROWSER_XSS_FILTER', True)
+SECURE_CONTENT_TYPE_NOSNIFF = env.bool('SECURE_CONTENT_TYPE_NOSNIFF', True)
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', True)
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', True)
+X_FRAME_OPTIONS = env.str('X_FRAME_OPTIONS', 'DENY')
 
 # locales paths in production
 if 'LOCALE_PATHS' in globals():

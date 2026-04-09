@@ -27,6 +27,9 @@ ENV DOCKER_USER=climweb_docker_user
 
 ENV POSTGRES_VERSION=15
 
+# Install Node.js (for Vue bundle building)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+
 # Install dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -51,6 +54,7 @@ RUN apt-get update \
     poppler-utils \
     git \
     gosu \
+    nodejs \
     && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && curl --silent https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
     && apt-get update \
@@ -85,6 +89,11 @@ RUN --mount=type=cache,mode=777,target=$PIP_CACHE_DIR,uid=$UID,gid=$GID . /climw
      pip3 install  -r /climweb/requirements/base.txt
 
 COPY --chown=$UID:$GID ./climweb /climweb/web
+
+# Build Vue bundles
+RUN cd /climweb/web/src/climweb/pages/home/home-map-vue && \
+    npm install && \
+    npm run build
 
 # Create static and media directories
 RUN mkdir -p /climweb/web/src/climweb/static \

@@ -1,9 +1,23 @@
 services:
   climweb_db_dev:
     image: postgis/postgis:${POSTGRES_VERSION:-15}-master
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - climweb_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-climweb_dev} -d ${POSTGRES_DB:-climweb_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   climweb_redis_dev:
     image: redis:alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-climweb}
+    volumes:
+      - climweb_redis_data:/data
 
   climweb_dev:
     image: climweb_dev
@@ -11,27 +25,76 @@ services:
     restart: no
     build:
       context: .
-      dockerfile: ./climweb/Dockerfile
+      dockerfile: ./Dockerfile
       target: dev
       args:
         - UID=${UID}
         - GID=${GID}
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - CMS_DB_HOST=climweb_db_dev
+      - CMS_DB_NAME=${CMS_DB_NAME}
+      - CMS_DB_USER=${CMS_DB_USER}
+      - CMS_DB_PASSWORD=${CMS_DB_PASSWORD}
+      - CMS_DB_PORT=5432
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG}
+      - CMS_DEBUG=${CMS_DEBUG}
+      - CMS_BASE_URL=${CMS_BASE_URL}
+      - CMS_SITE_NAME=${CMS_SITE_NAME}
+      - SITE_NAME=${SITE_NAME}
+      - WAGTAIL_SITE_NAME=${WAGTAIL_SITE_NAME}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
+      - TIME_ZONE=${TIME_ZONE}
+      - CMS_DEFAULT_LANGUAGE_CODE=${CMS_DEFAULT_LANGUAGE_CODE}
+      - CMS_ADMIN_URL_PATH=${CMS_ADMIN_URL_PATH}
+      - OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}
+      - UID=${UID}
+      - GID=${GID}
     ports:
       - "${CLIMWEB_DEV_PORT:-8000}:8000"
     volumes:
       - ./climweb:/climweb/web
+    depends_on:
+      climweb_db_dev:
+        condition: service_healthy
+      climweb_redis_dev:
+        condition: service_started
 
   climweb_celery_worker_dev:
     image: climweb_dev
     container_name: climweb_celery_worker_dev
     command: celery-worker
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG}
     volumes:
       - ./climweb:/climweb/web
+    depends_on:
+      - climweb_db_dev
+      - climweb_redis_dev
 
   climweb_celery_beat_dev:
     image: climweb_dev
     container_name: climweb_celery_beat_dev
-    restart: no
     command: celery-beat
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG}
     volumes:
       - ./climweb:/climweb/web
+    depends_on:
+      - climweb_db_dev
+      - climweb_redis_dev
+
+volumes:
+  climweb_db_data:
+  climweb_redis_data:
+  climweb_static:
+  climweb_media:

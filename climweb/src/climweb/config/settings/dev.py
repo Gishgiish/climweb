@@ -28,6 +28,9 @@ SHOW_COLLAPSED = False
 GDAL_LIBRARY_PATH = env.str('GDAL_LIBRARY_PATH', None)
 GEOS_LIBRARY_PATH = env.str('GEOS_LIBRARY_PATH', None)
 
+# Use built Vue assets instead of dev server
+VUE_FRONTEND_USE_DEV_SERVER = False
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

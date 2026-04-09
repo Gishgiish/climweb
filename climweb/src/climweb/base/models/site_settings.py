@@ -167,6 +167,10 @@ class IntegrationSettings(BaseSiteSetting):
     google_site_verification_key = models.CharField(max_length=255, blank=True, null=True,
                                                     verbose_name=_("Google Site Verification Key"), )
     
+    openweathermap_api_key = models.CharField(max_length=255, blank=True, null=True,
+                                              verbose_name=_("OpenWeatherMap API Key"),
+                                              help_text=_("Get a free API key at https://openweathermap.org/api"))
+    
     edit_handler = TabbedInterface([
         ObjectList([
             FieldPanel('youtube_api')
@@ -179,6 +183,9 @@ class IntegrationSettings(BaseSiteSetting):
         ObjectList([
             FieldPanel('google_site_verification_key'),
         ], heading=_("Google Search")),
+        ObjectList([
+            FieldPanel('openweathermap_api_key'),
+        ], heading=_("Weather Overlays")),
     ])
     
     class Meta:
@@ -367,3 +374,4 @@ class ImportantPages(BaseSiteSetting):
 def handle_clear_wagtail_cache(sender, **kwargs):
     logger.debug("[WAGTAIL_CACHE]: Clearing cache")
     clear_cache()
+

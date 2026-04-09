@@ -1,9 +1,14 @@
-{% load static nmhs_cms_tags i18n wagtailiconchooser_tags %}
+{% load static nmhs_cms_tags i18n wagtailiconchooser_tags tz %}
 {% if city_forecasts_by_date %}
     <style>
         .forecast-widget {
-            color: #fff;
+            color: #333;
             position: relative;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
 
         .forecast-widget .loader-wrapper {
@@ -46,7 +51,7 @@
         }
 
         .forecast-widget .city-search .search-icon svg {
-            fill: #fff;
+            fill: #333;
         }
 
 
@@ -55,21 +60,21 @@
         }
 
         .forecast-widget .city-search input {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(0, 0, 0, 0.05);
             backdrop-filter: blur(10px);
             width: 100%;
-            border: none;
-            color: #fff;
+            border: 1px solid #ddd;
+            color: #333;
 
         }
 
         .forecast-widget .city-search input::placeholder {
-            color: #fff;
+            color: #666;
             opacity: 1; /* Firefox */
         }
 
         .forecast-widget .detail-link {
-            color: #fff;
+            color: #1B5E20;
             text-decoration: underline;
         }
 
@@ -82,9 +87,8 @@
             align-items: center;
             font-weight: bold;
             font-size: 24px;
-            color: #fff;
+            color: #1B5E20;
             margin-right: 20px;
-            text-shadow: 0px 1px 10px #333;
 
         }
 
@@ -94,10 +98,9 @@
         }
 
         .forecast-content {
-            background-color: #ffffff10;
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border: 1px solid #ffffff50;
+            background-color: transparent;
+            padding: 15px;
+            border: 1px solid rgba(0,0,0,0.1);
             border-radius: 8px;
             width: 100%;
         }
@@ -116,6 +119,7 @@
             font-weight: bold;
             padding: 4px 10px;
             margin-bottom: 10px;
+            color: #1B5E20;
         }
 
         .forecast-widget .today-forecast .forecast-params {
@@ -147,6 +151,7 @@
             font-weight: bold;
             text-align: center;
             margin-bottom: 20px;
+            color: #333;
         }
 
 
@@ -161,6 +166,7 @@
             width: 100%;
             padding: 5px 10px;
             font-size: 14px;
+            color: #333;
         }
 
         .today-forecast .forecast-param.has-icon {
@@ -180,7 +186,7 @@
         .today-forecast .forecast-parameter-icon svg {
             height: 14px;
             width: 14px;
-            fill: #fff;
+            fill: #1B5E20;
         }
 
         .forecast-widget .forecast-item {
@@ -189,7 +195,7 @@
             align-items: center;
             height: 100%;
             min-height: 250px;
-            background-color: #ffffff15;
+            background-color: rgba(0,0,0,0.03);
             border-radius: 8px;
             overflow: hidden;
             text-align: center;
@@ -438,7 +444,7 @@
                                                 {% endif %}
                                             </div>
                                             <div>
-                                                {{ date|date:"d F" }}
+                                                {{ date|localtime|date:"d F" }}
                                             </div>
                                         </div>
                                         <div class="forecast-params">

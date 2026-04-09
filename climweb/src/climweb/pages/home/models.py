@@ -1,3 +1,4 @@
+import os
 from adminboundarymanager.models import AdminBoundarySettings
 from django.conf import settings
 from django.contrib.gis.db import models
@@ -257,6 +258,23 @@ class HomePage(MetadataPageMixin, Page):
             "home_weather_widget_url": get_full_url(request, reverse("home-weather-widget")),
         })
         
+        # Add OpenWeatherMap API key from env or settings
+        openweathermap_api_key = os.environ.get('OPENWEATHERMAP_API_KEY', '')
+        if not openweathermap_api_key:
+            try:
+                from climweb.base.models.site_settings import IntegrationSettings
+                integration_settings = IntegrationSettings.for_request(request)
+                openweathermap_api_key = integration_settings.openweathermap_api_key or ''
+            except:
+                pass
+        context['openweathermap_api_key'] = openweathermap_api_key
+        
+        # Add satellite imagery page URL if it exists
+        from climweb.pages.satellite_imagery.models import SatelliteImageryPage
+        satellite_imagery_page = SatelliteImageryPage.objects.live().first()
+        if satellite_imagery_page:
+            context["satellite_imagery_page_url"] = satellite_imagery_page.get_full_url(request)
+        
         if self.youtube_playlist:
             context['youtube_playlist_url'] = self.youtube_playlist.get_playlist_items_api_url(request)
         
@@ -287,28 +305,16 @@ class HomePage(MetadataPageMixin, Page):
     def latest_updates(self):
         updates = []
         
-        # get latest news, publication, crop monitor, seasonal forecast, food security statement,
-        news = NewsPage.objects.live().filter(is_visible_on_homepage=True).order_by('-date').first()
-        events = EventPage.objects.live().filter(is_visible_on_homepage=True).order_by('-date_from').first()
+        # Get latest news articles (up to 6 for homepage grid)
+        news = list(NewsPage.objects.live().filter(is_visible_on_homepage=True).order_by('-date')[:6])
         
-        if events is None:
-            events = EventPage.objects.live().order_by('-date_from').first()
+        # If no news with is_visible_on_homepage, get any news
+        if not news:
+            news = list(NewsPage.objects.live().order_by('-date')[:6])
         
-        if news is None:
-            news = NewsPage.objects.live().order_by('-date').first()
+        updates.extend(news)
         
-        publications = PublicationPage.objects.live().filter(is_visible_on_homepage=True).order_by(
-            '-publication_date').first()
-        
-        if publications is None:
-            publications = PublicationPage.objects.live().order_by('-publication_date').first()
-        
-        if news:
-            updates.append(news)
-        if events:
-            updates.append(events)
-        if publications:
-            updates.append(publications)
+        return updates
         
         return updates
     

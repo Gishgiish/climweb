@@ -1,316 +1,402 @@
 {% extends "base.html" %}
-{% load static %}
-{% load wagtailcore_tags wagtailimages_tags lazyimages_tags nmhs_cms_tags i18n wagtailiconchooser_tags %}
+{% load static wagtailcore_tags wagtailimages_tags lazyimages_tags nmhs_cms_tags i18n wagtailiconchooser_tags %}
 {% load vue_utils %}
 
 {% block body_class %}template-homepage{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/home.css' %}">
-    <link href="{% static 'css/hero.css' %}" type="text/css" rel="stylesheet"/>
-    <link href='{% static "css/maplibre-gl.css" %}' rel='stylesheet'/>
-    <link rel="stylesheet" type="text/css" href="{% static 'css/partners.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/project_detail.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/zoom-to-location-control.css' %}">
-    {% if page.youtube_playlist %}
-        <link rel="stylesheet" type="text/css" href="{% static 'css/jquery.skeleton.css' %}">
-        <link rel="stylesheet" type="text/css" href="{% static 'css/video_include.css' %}">
-    {% endif %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+<link href="{% static 'css/hero.css' %}" type="text/css" rel="stylesheet"/>
+<link href='{% static "css/maplibre-gl.css" %}' rel='stylesheet'/>
+<link rel="stylesheet" type="text/css" href="{% static 'css/partners.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/project_detail.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/zoom-to-location-control.css' %}">
+<link rel="stylesheet" href="{% static 'css/glide.core.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/glide.theme.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/forecast_widget.css' %}">
 
-    <link rel="stylesheet" href="{% static 'css/glide.core.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/glide.theme.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/forecast_widget.css' %}">
-{% endblock extra_css %}
+<style>
+/* Services Section - meteo.go.ke style */
+.services-section {
+    padding: 3rem 1.5rem;
+    background: #f8f9fa;
+}
+.services-section .section-title {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 2.5rem;
+    color: #333;
+    font-size: 1.5rem;
+}
+.services-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+.service-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-decoration: none;
+    color: #333;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 150px;
+    min-height: 150px;
+}
+.service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+.service-card .service-icon-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+}
+.service-card .service-icon {
+    width: 50px;
+    height: 50px;
+    background: #333;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+    margin: 0 auto;
+}
+.service-card.has-alert .service-icon {
+    background: #1B5E20;
+}
+.service-card .service-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: #fff;
+}
+.service-card .notification-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: #e53935;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    display: none;
+}
+.service-card.has-alert .notification-dot {
+    display: block;
+}
+.service-card .service-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.4;
+    margin-top: 0;
+    word-wrap: break-word;
+    width: 100%;
+}
+
+/* Weather Map Section */
+.weather-map-section {
+    padding: 3rem 1.5rem;
+    background: #fff;
+}
+.weather-map-section .section-title {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #1B5E20;
+}
+#home-map {
+    height: 500px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* News Section */
+.news-section {
+    padding: 3rem 1.5rem;
+    background: #f8f9fa;
+}
+.news-section .section-title {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: #1B5E20;
+}
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.news-card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease;
+}
+.news-card:hover {
+    transform: translateY(-5px);
+}
+.news-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+.news-card-content {
+    padding: 1.5rem;
+}
+.news-card-tag {
+    display: inline-block;
+    background: #1B5E20;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-bottom: 0.5rem;
+}
+.news-card-location {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+.news-card-location svg {
+    width: 12px;
+    height: 12px;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+.news-card-title {
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 0.5rem;
+}
+.news-card-title a {
+    color: #333;
+    text-decoration: none;
+}
+.news-card-title a:hover {
+    color: #1B5E20;
+}
+.news-card-date {
+    font-size: 12px;
+    color: #999;
+}
+.news-card-more {
+    display: inline-block;
+    margin-top: 1rem;
+    color: #1B5E20;
+    font-weight: 600;
+    text-decoration: none;
+}
+.news-card-more:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .services-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .news-grid {
+        grid-template-columns: 1fr;
+    }
+    #home-map {
+        height: 350px;
+    }
+}
+</style>
+{% endblock %}
 
 {% block content %}
+<main class="is-index">
+    <!-- Hero Section -->
     <div class="home-hero-wrapper">
         {% include 'home/section/hero_include.html' %}
     </div>
-    <main class="is-index">
-        {% include 'home/section/weather_watch_include.html' %}
-        {% include 'home/section/services_include.html' %}
-        {% include 'home/section/updates_include.html' %}
 
-        {% if page.youtube_playlist %}
-            <section class="has-text-centered videos" id="videoSection">
-                <div class="container is-align-content-center">
-                    <h2 class="section-title has-text-centered">{% translate 'Latest Media' %}  </h2>
-                    {% include 'videos_skeleton.html' %}
-                </div>
-            </section>
-        {% endif %}
-
-        {% if page.feature_block %}
-            <section class="feature-block-section">
-                {% for block in page.feature_block %}
-                    {% include_block block with is_even=forloop.counter|divisibleby:2 %}
-                {% endfor %}
-            </section>
-        {% endif %}
-        {% if page.partners %}
-            <section>
-                <div class="container">
-                    <h2 class="section-title has-text-centered"> {% translate "Our Partners" %}</h2>
-                    <div class="columns is-multiline is-mobile is-centered partners-list">
-                        {% for partner in page.partners %}
-                            {% if partner.visible_on_homepage and partner.logo %}
-                                <div class="column is-4-mobile is-4-tablet is-2-desktop  partner-item">
-                                    <a href="{% if partner.link %}{{ partner.link }} {% else %}{% endif %}"
-                                       target="{% if partner.link %}_blank{% else %}_self{% endif %}"
-                                       rel="noopener">
-                                        <div class="partner-img-wrapper" title="{{ partner.name }}">
-                                            <figure class="image">
-                                                {% image partner.logo original as p_logo %}
-                                                <img class="progressive__img progressive--not-loaded"
-                                                     data-progressive="{{ p_logo.url }}"
-                                                     src="{% lazy_image_url p_logo %}" alt="{{ partner.name }}"/>
-                                            </figure>
-                                        </div>
-                                    </a>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-
-                    {% if settings.base.ImportantPages.all_partners_page %}
-                        <div class="more-container" style="justify-content: center">
-                            <a class="center more" href="{{ settings.base.ImportantPages.all_partners_page.url }}" }>
-                                {% translate "More Partners" %}
-                                <span class="icon btn-icon">
-                                    {% svg_icon name="arrow-right-full" %}
-                                </span>
-                            </a>
+    <!-- About Us Section -->
+    <section id="about-us" class="about-us-section" style="padding: 3rem 1.5rem; background: #fff;">
+        <div class="container" style="max-width: 900px;">
+            <h2 class="section-title" style="text-align: center; font-weight: 700; margin-bottom: 2rem; color: #1B5E20; font-size: 1.5rem;">{% translate "About Us" %}</h2>
+            <div class="columns is-multiline" style="gap: 1.5rem;">
+                <div class="column" style="flex: 1; min-width: 280px;">
+                    <div class="about-card" style="background: #f8f9fa; border-radius: 12px; padding: 2rem; height: 100%; text-align: center;">
+                        <div style="width: 60px; height: 60px; background: #1B5E20; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: #fff;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                         </div>
-                    {% endif %}
+                        <h3 class="title is-4" style="color: #1B5E20; font-size: 1.25rem; margin-bottom: 1rem; text-align: center;">
+                            {% translate "Our Mission" %}
+                        </h3>
+                        <p style="color: #555; line-height: 1.6; text-align: center;">
+                            {% translate "To build climate resilience across Africa through participatory and inclusive community development, empowering communities with actionable climate information and sustainable adaptation strategies." %}
+                        </p>
+                    </div>
                 </div>
-            </section>
-        {% endif %}
-    </main>
-{% endblock content %}
+                <div class="column" style="flex: 1; min-width: 280px;">
+                    <div class="about-card" style="background: #f8f9fa; border-radius: 12px; padding: 2rem; height: 100%; text-align: center;">
+                        <div style="width: 60px; height: 60px; background: #1B5E20; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: #fff;"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </div>
+                        <h3 class="title is-4" style="color: #1B5E20; font-size: 1.25rem; margin-bottom: 1rem; text-align: center;">
+                            {% translate "Our Vision" %}
+                        </h3>
+                        <p style="color: #555; line-height: 1.6; text-align: center;">
+                            {% translate "A climate-resilient Africa where communities are empowered with timely, accurate weather and climate information to make informed decisions for sustainable livelihoods." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services-section">
+        <div class="container">
+            <h2 class="section-title">{% translate "Our Services" %}</h2>
+            <div class="services-grid">
+                {% if settings.base.ImportantPages.cap_warnings_list_page %}
+                <a href="/contact-us/" class="service-card" id="service-alerts">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 5v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+                        </div>
+                        <span class="notification-dot"></span>
+                    </div>
+                    <div class="service-title">{% translate "Weather Alerts" %}</div>
+                </a>
+                {% endif %}
+                <a href="/contact-us/" class="service-card" id="service-forecast">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+                        </div>
+                        <span class="notification-dot"></span>
+                    </div>
+                    <div class="service-title">{% translate "Weather Forecast" %}</div>
+                </a>
+                <a href="/contact-us/" class="service-card" id="service-climate">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-9.95h-2V3.5h2V.55zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41 1.79-1.79zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM20 10.5v2h3v-2h-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 16.95h2V19.5h-2v2.95zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41-1.79 1.8z"/></svg>
+                        </div>
+                        <span class="notification-dot"></span>
+                    </div>
+                    <div class="service-title">{% translate "Climate Data" %}</div>
+                </a>
+                <a href="/contact-us/" class="service-card" id="service-consultancy">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+                        </div>
+                        <span class="notification-dot"></span>
+                    </div>
+                    <div class="service-title">{% translate "Consultancy" %}</div>
+                </a>
+                {% if satellite_imagery_page_url %}
+                <a href="/contact-us/" class="service-card" id="service-satellite">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                        </div>
+                        <span class="notification-dot"></span>
+                    </div>
+                    <div class="service-title">{% translate "Satellite Imagery" %}</div>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Weather Watch Section (Map) -->
+    <section class="weather-map-section">
+        <div class="container">
+            <h2 class="section-title">{{ page.weather_watch_header|default:"Weather Map" }}</h2>
+            {% include 'home/section/weather_watch_include.html' %}
+        </div>
+    </section>
+    
+    <!-- Latest Updates / News Section -->
+    <section class="news-section">
+        <div class="container">
+            <h2 class="section-title">{% translate "Latest News & Updates" %}</h2>
+            {% include 'home/section/updates_include.html' %}
+        </div>
+    </section>
+</main>
+{% endblock %}
 
 {% block extra_js %}
-    <script src="{% static 'js/maplibre-gl.js' %}"></script>
-    <script src="{% static 'js/turf.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/bulmahead.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/zoom-to-location-control.js' %}"></script>
-    <script type="module" crossorigin src="{% vue_bundle_url 'home-map' %}"></script>
+<script src="{% static 'js/maplibre-gl.js' %}"></script>
+<script>
+// Patch maplibregl to store map instances globally (must run before Vue bundle)
+(function() {
+    if (typeof maplibregl !== 'undefined' && maplibregl.Map) {
+        var OriginalMap = maplibregl.Map;
+        window._mapInstances = [];
+        
+        maplibregl.Map = function(options) {
+            var map = new OriginalMap(options);
+            window._mapInstances.push(map);
+            // Also expose as weatherMapInstance for compatibility
+            window.weatherMapInstance = map;
+            return map;
+        };
+        maplibregl.Map.prototype = OriginalMap.prototype;
+        maplibregl.Map.prototype.constructor = maplibregl.Map;
+    }
+})();
+</script>
+<script src="{% static 'js/turf.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/bulmahead.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/zoom-to-location-control.js' %}"></script>
+<script type="module" crossorigin src="{% vue_bundle_url 'home-map' %}"></script>
+{% if page.youtube_playlist %}
+    <script src="{% static 'js/jquery.scheletrone.js' %}"></script>
+{% endif %}
+<script type="text/javascript" src="{% static 'js/glide.min.js' %}"></script>
+{% if page.show_city_forecast %}
+<script>
+    // Pass the weather widget URL to window for the hero forecast widget
+    window.homeWeatherWidgetUrl = "{{ home_weather_widget_url }}";
+    window.citySearchUrl = "{{ city_search_url }}";
+</script>
+<script src="{% static 'js/hero_forecast_widget.js' %}"></script>
+{% endif %}
 
-    {% if page.youtube_playlist %}
-        <script src="{% static 'js/jquery.scheletrone.js' %}"></script>
-    {% endif %}
-    <script type="text/javascript" src="{% static 'js/glide.min.js' %}"></script>
-    <script>
-        const homeMapSettingsUrl = "{{ home_map_settings_url|default_if_none:"" }}"
-        const homeWeatherWidgetUrl = "{{ home_weather_widget_url|default_if_none:"" }}"
-
-        const page_youtube_playlist = {{ page.youtube_playlist|yesno:'true,false' }};
-
-        const citySearchUrl = "{{ city_search_url }}"
-        const cityDetailUrl = "{{ city_detail_page_url|default_if_none:"" }}"
-
-
-        const countryBounds = {{ country_bounds|default_if_none:'[]' }}
-
-
-        const getMatchingCity = (name) => {
-            return fetch(`${citySearchUrl}?name=${name}`)
-                .then(response => response.json())
-                .then(data => {
-                    return data.map(city => {
-                        return {
-                            label: city.name,
-                            value: city.slug
-                        }
-                    })
-                })
-        }
-
-
-        const initMultiForecastSlider = (sliderElId) => {
-            return new Glide(`#${sliderElId}`, {
-                perView: 4,
-                bound: true,
-                gap: 20,
-                peek: {
-                    before: 40,
-                    after: 40
-                },
-                breakpoints: {
-                    1440: {
-                        perView: 3
-                    },
-                    800: {
-                        perView: 3
-                    },
-                    480: {
-                        perView: 1
+<!-- Service notification check -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for active alerts and update service card
+    var alertsUrl = "{{ home_map_alerts_url }}";
+    if (alertsUrl) {
+        fetch(alertsUrl)
+            .then(function(r) { return r.text(); })
+            .then(function(html) {
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(html, 'text/html');
+                var alertItems = doc.querySelectorAll('.alert-item');
+                if (alertItems.length > 0) {
+                    var alertsCard = document.getElementById('service-alerts');
+                    if (alertsCard) {
+                        alertsCard.classList.add('has-alert');
                     }
                 }
-            }).mount()
-        }
-        const weatherWidgetWrapper = $("#weather-widget-wrapper")
-        let singleForecastSlider
-        let activeMultiForecastSlider
-
-
-        const onSelectCity = ({label, value}) => {
-            renderWeatherWidgetForCity(value)
-        }
-
-        const renderWeatherWidgetForCity = (citySlug) => {
-            let url = `${homeWeatherWidgetUrl}`
-            if (citySlug) {
-                url = `${url}?city=${citySlug}`
-            }
-
-            const loader = $('#weather-widget-loader')
-            if (loader.length) {
-                loader.addClass('is-active')
-            }
-
-            const forecastSkeleton = $(".forecast-widget-skeleton")
-
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error fetching weather widget data');
-                    }
-                    return response.text();
-                })
-                .then(data => {
-                    weatherWidgetWrapper.html(data)
-
-                    const citySearch = $('#city-search')
-                    if (citySearch.length) {
-                        bulmaHead('city-search', 'city-search-menu', getMatchingCity, onSelectCity, 200, 0);
-                    }
-
-                    if (singleForecastSlider) {
-                        singleForecastSlider.destroy()
-                    }
-
-                    const $singlerForecastSlider = $("#single-forecast-slider")
-                    if ($singlerForecastSlider.length) {
-                        singleForecastSlider = new Glide('#single-forecast-slider', {
-                            perView: 3,
-                            bound: true,
-                            gap: 20,
-                            peek: {
-                                before: 50,
-                                after: 50
-                            },
-                            breakpoints: {
-                                1440: {
-                                    perView: 2
-                                },
-                                800: {
-                                    perView: 2
-                                },
-                                480: {
-                                    perView: 1
-                                }
-                            }
-                        })
-                        singleForecastSlider.mount()
-                    }
-
-                    const $activeMultiForecastSlider = $(".day-forecast-slider.initial-active")
-                    if ($activeMultiForecastSlider.length) {
-                        const sliderId = $activeMultiForecastSlider.attr('id')
-                        activeMultiForecastSlider = initMultiForecastSlider(sliderId).mount()
-                    }
-
-                    const tabs = document.querySelectorAll('.forecast-widget .tabs li')
-                    const tabContentBoxes = document.querySelectorAll('.forecast-widget .tab-content')
-
-                    tabs.forEach((tab) => {
-                        tab.addEventListener('click', () => {
-                            tabs.forEach(item => item.classList.remove('is-active'))
-                            tab.classList.add('is-active')
-
-                            const target = tab.dataset.target;
-                            tabContentBoxes.forEach(box => {
-                                const boxId = box.getAttribute('id')
-
-                                if (boxId === target) {
-                                    const sliderId = box.dataset.slider;
-
-                                    // Destroy the active slider if it exists
-                                    if (activeMultiForecastSlider) {
-                                        activeMultiForecastSlider.destroy()
-                                    }
-                                    box.classList.remove('is-hidden')
-
-                                    // Initialize the new slider
-                                    activeMultiForecastSlider = initMultiForecastSlider(sliderId).mount()
-
-                                } else {
-                                    box.classList.add('is-hidden')
-                                }
-                            })
-                        })
-                    })
-
-                    if (loader.length) {
-                        loader.removeClass('is-active')
-                    }
-
-                    if (forecastSkeleton.length) {
-                        forecastSkeleton.hide()
-                    }
-                })
-                .catch(error => {
-                    console.error('HOME_WEATHER_WIDGET_ERROR:', error);
-
-                    if (loader.length) {
-                        loader.removeClass('is-active')
-                    }
-
-                    if (forecastSkeleton.length) {
-                        forecastSkeleton.hide()
-                    }
-                });
-        }
-
-
-        $(document).ready(function () {
-
-            if (weatherWidgetWrapper.length && homeWeatherWidgetUrl) {
-                renderWeatherWidgetForCity()
-            } else {
-                const forecastSkeleton = $(".forecast-widget-skeleton")
-                if (forecastSkeleton.length) {
-                    forecastSkeleton.hide()
-                }
-            }
-
-            if (page_youtube_playlist) {
-                const url = "{{ youtube_playlist_url }}";
-                const $videoWrapper = $('#videoWrapper');
-
-                if ($videoWrapper.length) {
-                    $videoWrapper.scheletrone({
-                        onComplete: function () {
-                            $.ajax({
-                                url: url,
-                                dataType: "html",
-                                success: function (data) {
-                                    // if we have videos append them, else hide whole section
-                                    if (data) {
-                                        $('#videoWrapper').html('').append(data).ready();
-                                    } else {
-                                        $('#videoSection').remove()
-                                    }
-                                },
-                                error: function () {
-                                    $('#videoSection').remove()
-                                }
-                            });
-                        }
-                    });
-                }
-            }
-        });
-    </script>
-
+            })
+            .catch(function() {});
+    }
+});
+</script>
 {% endblock %}
