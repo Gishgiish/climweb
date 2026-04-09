@@ -192,3 +192,9 @@ tmp/
 *.pyc
 __pycache__/
 .env
+
+# Production
+/staticfiles/
+*.pyc
+__pycache__/
+.env

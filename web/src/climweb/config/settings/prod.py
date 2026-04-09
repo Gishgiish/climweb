@@ -5,9 +5,9 @@ import dj_database_url
 # SECURITY: Never run with DEBUG=True in production
 DEBUG = False
 
-# Allow your Render domain
+# Allow your railway domain
 ALLOWED_HOSTS = [
-    '.onrender.com',  # Allows any *.onrender.com subdomain
+    '.up.railway.app',  # Allows any *.up.railway.app subdomain
     'localhost',      # For testing
     '127.0.0.1',
 ]
