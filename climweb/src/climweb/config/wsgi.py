@@ -13,7 +13,7 @@ from django.core.wsgi import get_wsgi_application
 
 from climweb.config.telemetry.telemetry import setup_telemetry, setup_logging
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", f"climweb.config.settings.production")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", f"climweb.config.settings.prod")
 
 # The telemetry instrumentation library setup needs to run prior to django's setup.
 setup_telemetry(add_django_instrumentation=True)
