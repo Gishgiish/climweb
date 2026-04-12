@@ -124,9 +124,11 @@ ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/climweb/web/docker/docker-entr
 # Add the venv to the path. This ensures that the venv is always activated when the container starts.
 ENV PATH="/climweb/venv/bin:$PATH"
 
-ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.production'
+# Production settings (override via env var if needed)
+ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.prod'
 
-CMD ["gunicorn"]
+# Production CMD for gunicorn
+CMD ["gunicorn", "climweb.config.wsgi:application", "--bind", "0.0.0.0:8000", "--log-file", "-"]
 
 FROM base as dev
 
