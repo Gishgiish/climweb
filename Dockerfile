@@ -93,7 +93,7 @@ COPY --chown=$UID:$GID ./climweb /climweb/climweb
 COPY --chown=$UID:$GID ./web /climweb/web
 
 # Build Vue bundles
-RUN cd /climweb/web/src/climweb/pages/home/home-map-vue && \
+RUN cd /climweb/climweb/src/climweb/pages/home/home-map-vue&& \
     npm install && \
     npm run build
 
