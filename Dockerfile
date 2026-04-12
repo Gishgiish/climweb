@@ -119,7 +119,7 @@ ENV GEOMANAGER_AUTO_INGEST_RASTER_DATA_DIR=/climweb/geomanager/data
 RUN mkdir -p $GEOMANAGER_AUTO_INGEST_RASTER_DATA_DIR && chown -R $UID:$GID $GEOMANAGER_AUTO_INGEST_RASTER_DATA_DIR
 
 # install climweb as a package
-RUN chmod a+x /climweb/web/docker/docker-entrypoint.sh && \
+RUN chmod a+x /climweb/climweb/docker/docker-entrypoint.sh && \
     /climweb/venv/bin/pip install --no-cache-dir -e /climweb/web/
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/climweb/web/docker/docker-entrypoint.sh"]
