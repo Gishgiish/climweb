@@ -80,14 +80,17 @@ RUN mkdir -p /climweb/web /climweb/plugins && chown -R $UID:$GID /climweb
 
 USER $UID:$GID
 
+# Copy requirements first for better layer caching
 COPY ./climweb/requirements/base.txt /climweb/requirements/
 RUN python3 -m venv /climweb/venv
-
-# hadolint ignore=SC1091
 RUN . /climweb/venv/bin/activate && \
      pip3 install  -r /climweb/requirements/base.txt
 
-COPY --chown=$UID:$GID ./climweb /climweb/web
+# Copy the climweb directory for plugins, deploy scripts, etc.
+COPY --chown=$UID:$GID ./climweb /climweb/climweb
+
+# Copy the web directory containing the Django application
+COPY --chown=$UID:$GID ./web /climweb/web
 
 # Build Vue bundles
 RUN cd /climweb/web/src/climweb/pages/home/home-map-vue && \
