@@ -46,12 +46,14 @@ RUN chmod +x /wait
 # Create directories and set correct permissions
 RUN mkdir -p /climweb/web /climweb/plugins && chown -R $UID:$GID /climweb
 
-USER $UID:$GID
+
 
 # Enable pip caching for faster rebuilds
 ENV PIP_CACHE_DIR=/root/.cache/pip
 ENV PIP_NO_CACHE_DIR=0
 RUN mkdir -p /root/.cache/pip && chown -R $UID:$GID /root/.cache/pip
+
+USER $UID:$GID
 
 # Copy requirements first for better layer caching
 COPY ./climweb/requirements/base.txt /climweb/requirements/
