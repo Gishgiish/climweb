@@ -1,5 +1,6 @@
 [phases.setup]
-nixPkgs = ["python310", "gcc", "libpq", "gdal", "geos"]
+# Use valid Nix package names only
+nixPkgs = ["python310", "gcc", "postgresql"]
 
 [phases.build]
 cmds = [
