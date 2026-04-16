@@ -27,7 +27,6 @@ ENV DOCKER_USER=climweb_docker_user
 # Instead, use standard RUN without cache mounts for reliability
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        build-essential \
         cron \
         tini \
         gosu \
