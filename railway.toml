@@ -14,7 +14,7 @@ pip_packages = ["django-environ"]
 cmds = [
   "pip list | grep -i environ",  # Debug: Check if django-environ is installed
   "pip install -r climweb/requirements/base.txt",
-  "pip list | grep -i environ"   # Debug: Check again after install
+  "pip list | grep -i environ",  # Debug: Check again after install
   "cd climweb/src && python climweb/manage.py collectstatic --noinput 2>/dev/null || true"
 ]
 
