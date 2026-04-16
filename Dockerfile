@@ -22,11 +22,10 @@ RUN if getent group $GID > /dev/null; then \
 
 ENV DOCKER_USER=climweb_docker_user
 
-# Install packages with BuildKit cache mount (faster rebuilds)
-# Combine all apt operations into single RUN to reduce layers
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && \
+# Install packages - NOTE: Removed cache mounts to avoid Railway ID issues
+# Railway requires specific ID format: s/<service id>-<target path>
+# Instead, use standard RUN without cache mounts for reliability
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         cron \
         tini \
