@@ -27,11 +27,14 @@ ENV DOCKER_USER=climweb_docker_user
 # Instead, use standard RUN without cache mounts for reliability
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        build-essential \
         cron \
         tini \
         gosu \
         inotify-tools \
         libffi-dev \
+        python3-venv \
+        python3-pip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
