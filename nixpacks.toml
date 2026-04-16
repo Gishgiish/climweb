@@ -1,9 +1,10 @@
 [phases.setup]
-# Use valid Nix package names only
-nixPkgs = ["python310", "gcc"]
+nixPkgs = ["python310", "gcc", "postgresql", "gdal", "geos", "proj"]
 
 [phases.build]
 cmds = [
+  "export GDAL_LIBRARY_PATH=$(gdal-config --libs | cut -d' ' -f1 | sed 's/-L//')",
+  "export GEOS_LIBRARY_PATH=$(geos-config --libs | cut -d' ' -f1 | sed 's/-L//')",
   "pip install --upgrade pip",
   "pip install django-environ",
   "pip install -r climweb/requirements/base.txt",
