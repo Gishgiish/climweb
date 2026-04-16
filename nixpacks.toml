@@ -1,6 +1,6 @@
 [phases.setup]
 # Use valid Nix package names only
-nixPkgs = ["python310", "gcc", "postgresql"]
+nixPkgs = ["python310", "gcc"]
 
 [phases.build]
 cmds = [
