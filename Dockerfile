@@ -25,16 +25,41 @@ RUN useradd --shell /bin/bash -u $UID -g $GID -o -c "" -m climweb_docker_user -l
 
 ENV DOCKER_USER=climweb_docker_user
 
+<<<<<<< HEAD
 # Install ONLY what's NOT already in ubuntu-full base image
 # (saves ~5-8 minutes vs installing everything from scratch)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+=======
+ENV POSTGRES_VERSION=15
+
+# Install dependencies (Node.js setup + all packages in a single RUN to minimise layers)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    gnupg2 \
+    curl \
+    lsb-release \
+    && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && curl --silent https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y --no-install-recommends \
+    build-essential \
+>>>>>>> c56e81d8f643c4c50a9717a3971e25b927faa9ad
     cron \
     tini \
     gosu \
+<<<<<<< HEAD
     inotify-tools \
     libmagic1 \
     libffi-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+=======
+    nodejs \
+    postgresql-client-$POSTGRES_VERSION \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+>>>>>>> c56e81d8f643c4c50a9717a3971e25b927faa9ad
 
 # Install docker-compose wait
 ARG DOCKER_COMPOSE_WAIT_VERSION
