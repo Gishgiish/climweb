@@ -9,6 +9,6 @@ python_version = "3.10"
 apt_pkgs = ["cron", "tini", "gosu", "libpq5", "libgeos-c1v5", "libmagic1", "libcairo2", "libpango-1.0-0", "libffi8", "poppler-utils"]
 
 [deploy]
-startCommand = "gunicorn climweb.config.wsgi:application --bind 0.0.0.0:8000"
+startCommand = "cd /app/climweb/src && gunicorn climweb.config.wsgi:application --bind 0.0.0.0:8000"
 healthcheckPath = "/health/"
 restartPolicyType = "on_failure"
