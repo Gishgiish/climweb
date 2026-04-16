@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ["python310", "gcc", "libpq", "gdal", "geos"]
+
+[phases.build]
+cmds = [
+  "pip install --upgrade pip",
+  "pip install django-environ",
+  "pip install -r climweb/requirements/base.txt",
+  "pip install -e climweb/",
+  "cd climweb/src && python climweb/manage.py collectstatic --noinput 2>/dev/null || true"
+]
+
+[start]
+cmd = "cd climweb/src && gunicorn climweb.config.wsgi:application --bind 0.0.0.0:8000 --log-file -"
