@@ -980,3 +980,5 @@ setuptools==80.9.0
     #   django-positions
     #   incremental
     #   zope-interface
+whitenoise==6.6.0
+    # via -r base.in

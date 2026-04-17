@@ -19,6 +19,7 @@ cmds = [
 ]
 
 [deploy]
-startCommand = "cd /app/climweb/src && gunicorn climweb.config.wsgi:application --bind 0.0.0.0:8000"
-healthcheckPath = "/health/"
+startCommand = "cd /app/climweb/src && gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT"
+healthcheckPath = "/api/_health/"
+healthcheckTimeout = 30
 restartPolicyType = "on_failure"
