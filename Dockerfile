@@ -4,9 +4,11 @@ FROM python:3.10-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DJANGO_SETTINGS_MODULE=climweb.config.settings.prod \
+    PYTHONPATH=/app/climweb/src
 
-# Install system dependencies including PostGIS and geo-libraries
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     postgresql-client \
@@ -18,46 +20,38 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     binutils \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /app
+# Set working directory to where manage.py actually lives
+WORKDIR /app/climweb/src/climweb
 
 # Copy requirements first for better caching
-COPY climweb/requirements/ ./climweb/requirements/
+COPY climweb/requirements/ /app/climweb/requirements/
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
-    pip install django-environ gunicorn whitenoise && \
-    pip install -r climweb/requirements/base.txt
+    pip install django-environ gunicorn whitenoise psycopg2-binary && \
+    pip install -r /app/climweb/requirements/base.txt && \
+    pip install -e /app/climweb/
 
-# Copy the entire project (BOTH climweb and web directories)
-COPY climweb/ ./climweb/
-
-# DEBUG: List directory contents to verify files are copied correctly
-RUN echo "=== ROOT /app ===" && ls -la /app && \
-    echo "=== /app/climweb ===" && ls -la /app/climweb && \
-    echo "=== /app/climweb/src ===" && ls -la /app/climweb/src && \
-    echo "=== Looking for manage.py ===" && find /app -name "manage.py"
+# Copy the entire project
+COPY climweb/ /app/climweb/
 
 # Set environment variables for GDAL/GEOS
 ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
-    GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
-    PYTHONPATH=/app/web/src
+    GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
 
-WORKDIR /app/climweb/src/climweb
+# Verify manage.py exists
+RUN ls -la /app/climweb/src/climweb/manage.py && \
+    echo "✓ manage.py found at /app/climweb/src/climweb/manage.py"
 
-RUN echo "=== Current dir ===" && pwd && \
-    echo "=== Files in current dir ===" && ls -la && \
-    echo "=== Checking manage.py ===" && test -f ../manage.py && echo "manage.py found at ../manage.py" || echo "manage.py NOT found"
+# Collect static files
+RUN python manage.py collectstatic --noinput
 
-
-
-# Expose port (Railway will override this)
+# Expose port
 EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/_health/')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/api/_health/')" || exit 1
 
-# Start command - run from /app/web/src so gunicorn can find the module
-WORKDIR /app/web/src
+# Start command
 CMD ["gunicorn", "climweb.config.wsgi:application", "--bind", "0.0.0.0:8000", "--log-file", "-"]
