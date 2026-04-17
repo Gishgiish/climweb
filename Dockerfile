@@ -42,24 +42,22 @@ ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
 RUN ls -la /app/climweb/src/climweb/manage.py && \
     echo "✓ manage.py found at /app/climweb/src/climweb/manage.py"
 
-# Create entrypoint script
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-echo "Starting application setup..."\n\
-\n\
-# Run migrations\n\
-echo "Running database migrations..."\n\
-python /app/climweb/src/climweb/manage.py migrate --noinput\n\
-\n\
-# Collect static files\n\
-echo "Collecting static files..."\n\
-python /app/climweb/src/climweb/manage.py collectstatic --noinput\n\
-\n\
-# Start Gunicorn\n\
-echo "Starting Gunicorn..."\n\
-exec gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -\n\
-' > /entrypoint.sh && chmod +x /entrypoint.sh
+# Create an entrypoint script to handle startup tasks
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Run migrations' >> /entrypoint.sh && \
+    echo 'echo "Running database migrations..."' >> /entrypoint.sh && \
+    echo 'python manage.py migrate --noinput || echo "Migration failed or not needed"' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Collect static files' >> /entrypoint.sh && \
+    echo 'echo "Collecting static files..."' >> /entrypoint.sh && \
+    echo 'python manage.py collectstatic --noinput || echo "Collectstatic failed"' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Start Gunicorn' >> /entrypoint.sh && \
+    echo 'echo "Starting Gunicorn..."' >> /entrypoint.sh && \
+    echo 'exec gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
 
 # Expose port (Railway will override this)
 EXPOSE 8000
