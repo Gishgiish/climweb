@@ -1,42 +1,53 @@
 FROM python:3.10-slim
 
-# Install system dependencies
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies including PostGIS and geo-libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    binutils \
-    libproj-dev \
+    build-essential \
+    postgresql-client \
+    libpq-dev \
+    gdal-bin \
     libgdal-dev \
     libgeos-dev \
-    libpq-dev \
-    postgresql-client \
-    build-essential \
-    git \
+    libproj-dev \
+    binutils \
     && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables for GDAL/GEOS
-ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgdal.so
-ENV GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgeos_c.so
-
+# Set working directory
 WORKDIR /app
 
 # Copy requirements first for better caching
-COPY climweb/requirements/base.txt ./requirements.txt
+COPY climweb/requirements/ ./climweb/requirements/
 
-# Install Python dependencies - use psycopg2-binary to avoid compilation
+# Install Python dependencies
 RUN pip install --upgrade pip && \
-    pip install django-environ gunicorn psycopg2-binary && \
-    pip install -r requirements.txt
+    pip install django-environ gunicorn whitenoise && \
+    pip install -r climweb/requirements/base.txt && \
+    pip install -e climweb/
 
-# Copy application code
-COPY . .
+# Copy the entire project
+COPY climweb/ ./climweb/
 
-# Install the package in editable mode
-RUN pip install -e climweb/
+# Set environment variables for GDAL/GEOS
+ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
+    GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
+    PYTHONPATH=/app/climweb/src
 
 # Collect static files
 WORKDIR /app/climweb/src
-RUN python manage.py collectstatic --noinput || true
+RUN python ../manage.py collectstatic --noinput
 
+# Expose port (Railway will override this)
 EXPOSE 8000
 
-# Start command - Railway will override PORT
-CMD ["gunicorn", "climweb.config.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/api/_health/')" || exit 1
+
+# Start command (Railway will override with its own)
+CMD ["gunicorn", "climweb.config.wsgi:application", "--bind", "0.0.0.0:8000", "--log-file", "-"]

@@ -10,16 +10,15 @@ apt_pkgs = ["cron", "tini", "gosu", "libpq5", "libgeos-c1v5", "libmagic1", "libc
 
 pip_packages = ["django-environ"]
 
-[phases.build]
-cmds = [
-  "pip list | grep -i environ",  # Debug: Check if django-environ is installed
-  "pip install -r climweb/requirements/base.txt",
-  "pip list | grep -i environ",  # Debug: Check again after install
-  "cd climweb/src && python climweb/manage.py collectstatic --noinput 2>/dev/null || true"
-]
 
-[deploy]
+
+[deploy.startCommand]
 startCommand = "cd /app/climweb/src && gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT"
+
+[deploy.preDeploy]
+cmd = "cd /app/climweb/src && python ../manage.py migrate --noinput && python ../manage.py collectstatic --noinput"
+
 healthcheckPath = "/api/_health/"
 healthcheckTimeout = 30
-restartPolicyType = "on_failure"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
