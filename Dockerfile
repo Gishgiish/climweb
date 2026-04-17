@@ -48,7 +48,7 @@ RUN printf '#!/bin/bash\n\
 set -e\n\
 \n\
 echo "Waiting for database to be ready..."\n\
-sleep 5\n\
+sleep 10\n\
 \n\
 echo "Running migrations..."\n\
 cd /app/climweb/src/climweb && python manage.py migrate --noinput\n\
