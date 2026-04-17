@@ -29,8 +29,7 @@ COPY climweb/requirements/ /app/climweb/requirements/
 # Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install django-environ gunicorn whitenoise psycopg2-binary && \
-    pip install -r /app/climweb/requirements/base.txt && \
-    pip install -e /app/climweb/
+    pip install -r /app/climweb/requirements/base.txt 
 
 # Copy the entire project
 COPY climweb/ /app/climweb/
