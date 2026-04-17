@@ -1,24 +1,14 @@
 [build]
-builder = "nixpacks"
+builder = "DOCKERFILE"
 
-[build.nixpacks]
-# Use Python 3.10
-python_version = "3.10"
-
-# Install only runtime deps
-apt_pkgs = ["cron", "tini", "gosu", "libpq5", "libgeos-c1v5", "libmagic1", "libcairo2", "libpango-1.0-0", "libffi8", "poppler-utils"]
-
-pip_packages = ["django-environ"]
-
-
+[deploy]
+healthcheckPath = "/api/_health/"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
 
 [deploy.startCommand]
-startCommand = "cd /app/climweb/src && gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT"
+cmd = "cd /app/climweb/src && gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -"
 
 [deploy.preDeploy]
 cmd = "cd /app/climweb/src && python ../manage.py migrate --noinput && python ../manage.py collectstatic --noinput"
-
-healthcheckPath = "/api/_health/"
-healthcheckTimeout = 30
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
