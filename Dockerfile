@@ -43,15 +43,14 @@ RUN pip install --upgrade pip && \
 # Copy the entire project
 COPY climweb/ ./climweb/
 
+RUN cd /app/climweb/src/climweb && python manage.py collectstatic --noinput
+
 # Create entrypoint script
 RUN printf '#!/bin/bash\n\
 set -e\n\
 \n\
 echo "Waiting for database to be ready..."\n\
 sleep 10\n\
-\n\
-echo "Running migrations..."\n\
-cd /app/climweb/src/climweb && python manage.py migrate --noinput\n\
 \n\
 echo "Collecting static files..."\n\
 cd /app/climweb/src/climweb && python manage.py collectstatic --noinput\n\
