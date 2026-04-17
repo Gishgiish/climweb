@@ -43,7 +43,7 @@ ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
     GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
     PYTHONPATH=/app/web/src
 
-WORKDIR /app/climweb/src
+WORKDIR /app/climweb/src/climweb
 
 RUN echo "=== Current dir ===" && pwd && \
     echo "=== Files in current dir ===" && ls -la && \
