@@ -45,16 +45,17 @@ if not DATABASE_URL:
 
 # Parse the URL manually to ensure we can force sslmode=disable
 # This bypasses any automatic SSL detection by dj_database_url
-parsed_db = dj_database_url.parse(DATABASE_URL)
+db_config = dj_database_url.parse(DATABASE_URL)
+
+if 'OPTIONS' not in db_config:
+    db_config['OPTIONS'] = {}
 
 # FORCE SSL MODE TO DISABLE
-parsed_db['CONN_MAX_AGE'] = 600
-parsed_db['OPTIONS'] = {
-    'sslmode': 'disable',
-    'connect_timeout': 10,
-}
+# Force disable SSL to be absolutely sure
+db_config['OPTIONS']['sslmode'] = 'disable'
+db_config['CONN_MAX_AGE'] = 600
 
 DATABASES = {
-    'default': parsed_db
+    'default': db_config
 }
 # Note: Health check endpoint already exists at /api/_health/ in base urls
