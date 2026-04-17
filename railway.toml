@@ -6,9 +6,5 @@ healthcheckPath = "/api/_health/"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-
-[deploy.startCommand]
-cmd = "cd /app/climweb/src && gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -"
-
-[deploy.preDeploy]
-cmd = "cd /app/climweb/src && python ../manage.py migrate --noinput && python ../manage.py collectstatic --noinput"
+preDeploy = "cd /app/climweb/src && python ../manage.py migrate --noinput && python ../manage.py collectstatic --noinput"
+startCommand = "cd /app/climweb/src && gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -"
