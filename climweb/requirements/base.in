@@ -45,7 +45,7 @@ metar-taf-parser-mivek==1.9.0
 OWSLib==0.33.0
 pandas==2.2.3
 pdf2image==1.17.0
-psycopg2>=2.9.10
+psycopg2-binary
 python-dateutil==2.9.0.post0
 uvicorn[standard]==0.35.0
 wagtail==7.0

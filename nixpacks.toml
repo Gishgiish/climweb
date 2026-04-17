@@ -1,5 +1,6 @@
 [phases.setup]
-nixPkgs = ["python310", "gcc", "postgresql", "gdal", "geos", "proj"]
+nixPkgs = ["python310"]
+aptPkgs = ["build-essential", "postgresql", "libpq-dev", "binutils"]
 
 [phases.build]
 cmds = [

@@ -39,6 +39,8 @@ venv_prod/
 *.swp
 *.swo
 
+
+
 # Environment
 .env
 env.backup
