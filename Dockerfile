@@ -42,15 +42,27 @@ ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
 RUN ls -la /app/climweb/src/climweb/manage.py && \
     echo "✓ manage.py found at /app/climweb/src/climweb/manage.py"
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Create entrypoint script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "Starting application setup..."\n\
+\n\
+# Run migrations\n\
+echo "Running database migrations..."\n\
+python /app/climweb/src/climweb/manage.py migrate --noinput\n\
+\n\
+# Collect static files\n\
+echo "Collecting static files..."\n\
+python /app/climweb/src/climweb/manage.py collectstatic --noinput\n\
+\n\
+# Start Gunicorn\n\
+echo "Starting Gunicorn..."\n\
+exec gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -\n\
+' > /entrypoint.sh && chmod +x /entrypoint.sh
 
-# Expose port
+# Expose port (Railway will override this)
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/api/_health/')" || exit 1
-
-# Start command
-CMD ["gunicorn", "climweb.config.wsgi:application", "--bind", "0.0.0.0:8000", "--log-file", "-"]
+# Use entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
