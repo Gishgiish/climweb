@@ -40,7 +40,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DATABASES['default'] = dj_database_url.config(
     conn_max_age=600,
     conn_health_checks=True,
-    ssl_require=os.getenv('DB_SSL_REQUIRE', 'True').lower() in ('true', '1', 'yes')
+    ssl_require=False
 )
 
 # Note: Health check endpoint already exists at /api/_health/ in base urls
