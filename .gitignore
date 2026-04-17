@@ -12,6 +12,8 @@ build/
 *.so
 *.a
 *.out
+*.py[cod]
+*$py.class
 
 # Dependencies
 .venv/
@@ -21,6 +23,15 @@ node_modules/
 .pytest_cache/
 target/
 .gradle/
+ENV/
+env/
+venv.bak/
+venv_backup/
+venv_old/
+venv_new/
+venv_test/
+venv_dev/
+venv_prod/
 
 # Logs and temp files
 *.log
@@ -30,16 +41,20 @@ target/
 
 # Environment
 .env
+env.backup
 .env.local
 *.env.*
 
 # Editors
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # System files
 .DS_Store
 Thumbs.db
+db.sqlite3
 
 # Coverage
 coverage/
