@@ -37,10 +37,24 @@ MIDDLEWARE.insert(MIDDLEWARE.index('django.middleware.security.SecurityMiddlewar
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Database configuration from DATABASE_URL
-DATABASES['default'] = dj_database_url.config(
-    conn_max_age=600,
-    conn_health_checks=True,
-    ssl_require=False
-)
+# Get the raw DATABASE_URL
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
+if not DATABASE_URL:
+    raise ImproperlyConfigured("DATABASE_URL environment variable must be set")
+
+# Parse the URL manually to ensure we can force sslmode=disable
+# This bypasses any automatic SSL detection by dj_database_url
+parsed_db = dj_database_url.parse(DATABASE_URL)
+
+# FORCE SSL MODE TO DISABLE
+parsed_db['CONN_MAX_AGE'] = 600
+parsed_db['OPTIONS'] = {
+    'sslmode': 'disable',
+    'connect_timeout': 10,
+}
+
+DATABASES = {
+    'default': parsed_db
+}
 # Note: Health check endpoint already exists at /api/_health/ in base urls
