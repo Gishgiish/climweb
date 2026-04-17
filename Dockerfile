@@ -29,16 +29,17 @@ RUN pip install --upgrade pip && \
     pip install django-environ gunicorn whitenoise && \
     pip install -r climweb/requirements/base.txt
 
-# Copy the entire project
+# Copy the entire project (BOTH climweb and web directories)
 COPY climweb/ ./climweb/
+COPY web/ ./web/
 
 # Set environment variables for GDAL/GEOS
 ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
     GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
-    PYTHONPATH=/app/climweb/src
+    PYTHONPATH=/app/web/src
 
 # Collect static files
-WORKDIR /app/climweb/web/src/climweb
+WORKDIR /app/web/src/climweb
 RUN python manage.py collectstatic --noinput
 
 # Expose port (Railway will override this)
@@ -46,7 +47,8 @@ EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/api/_health/')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/_health/')" || exit 1
 
-# Start command (Railway will override with its own)
+# Start command - run from /app/web/src so gunicorn can find the module
+WORKDIR /app/web/src
 CMD ["gunicorn", "climweb.config.wsgi:application", "--bind", "0.0.0.0:8000", "--log-file", "-"]
