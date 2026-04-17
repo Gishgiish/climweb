@@ -48,7 +48,7 @@ x-climweb-variables: &climweb-variables
 services:
   climweb_db_dev:
     container_name: climweb_db_dev
-    image: postgis/postgis:15-master
+    image: postgis/postgis:15-3.3
     platform: linux/x86_64
     restart: no
     environment:
