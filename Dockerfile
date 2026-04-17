@@ -38,8 +38,8 @@ ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
     PYTHONPATH=/app/climweb/src
 
 # Collect static files
-WORKDIR /app/climweb/src
-RUN python ../manage.py collectstatic --noinput
+WORKDIR /app/climweb/web/src/climweb
+RUN python manage.py collectstatic --noinput
 
 # Expose port (Railway will override this)
 EXPOSE 8000
