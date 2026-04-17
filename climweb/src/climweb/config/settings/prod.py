@@ -37,22 +37,20 @@ MIDDLEWARE.insert(MIDDLEWARE.index('django.middleware.security.SecurityMiddlewar
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Database configuration from DATABASE_URL
-# Get the raw DATABASE_URL
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if not DATABASE_URL:
     raise ImproperlyConfigured("DATABASE_URL environment variable must be set")
 
-# Parse the URL manually to ensure we can force sslmode=disable
-# This bypasses any automatic SSL detection by dj_database_url
+# Parse the URL from the environment
 db_config = dj_database_url.parse(DATABASE_URL)
 
-if 'OPTIONS' not in db_config:
-    db_config['OPTIONS'] = {}
-
-# FORCE SSL MODE TO DISABLE
-# Force disable SSL to be absolutely sure
+# EXPLICITLY force sslmode to disable to override any URL params or defaults
+db_config.setdefault('OPTIONS', {})
 db_config['OPTIONS']['sslmode'] = 'disable'
+db_config['OPTIONS']['connect_timeout'] = 10
+
+# Set connection age for performance
 db_config['CONN_MAX_AGE'] = 600
 
 DATABASES = {
