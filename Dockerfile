@@ -31,12 +31,24 @@ RUN pip install --upgrade pip && \
 
 # Copy the entire project (BOTH climweb and web directories)
 COPY climweb/ ./climweb/
-COPY web/ ./web/
+
+# DEBUG: List directory contents to verify files are copied correctly
+RUN echo "=== ROOT /app ===" && ls -la /app && \
+    echo "=== /app/climweb ===" && ls -la /app/climweb && \
+    echo "=== /app/climweb/src ===" && ls -la /app/climweb/src && \
+    echo "=== Looking for manage.py ===" && find /app -name "manage.py"
 
 # Set environment variables for GDAL/GEOS
 ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
     GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
     PYTHONPATH=/app/web/src
+
+WORKDIR /app/climweb/src
+
+RUN echo "=== Current dir ===" && pwd && \
+    echo "=== Files in current dir ===" && ls -la && \
+    echo "=== Checking manage.py ===" && test -f ../manage.py && echo "manage.py found at ../manage.py" || echo "manage.py NOT found"
+
 
 
 # Expose port (Railway will override this)
