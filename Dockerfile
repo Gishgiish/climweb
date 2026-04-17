@@ -5,10 +5,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    DJANGO_SETTINGS_MODULE=climweb.config.settings.prod \
+    GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
+    GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
     PYTHONPATH=/app/climweb/src
 
 # Install system dependencies
+# Includes: Build tools, Postgres client, GDAL/GEOS/PROJ for geo, and CAIRO/PANGO for SVG rendering
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     postgresql-client \
@@ -17,47 +19,45 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal-dev \
     libgeos-dev \
     libproj-dev \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    shared-mime-info \
     binutils \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ldconfig
 
-# Set working directory to where manage.py actually lives
-WORKDIR /app/climweb/src/climweb
+# Set working directory
+WORKDIR /app
 
 # Copy requirements first for better caching
-COPY climweb/requirements/ /app/climweb/requirements/
+COPY climweb/requirements/ ./climweb/requirements/
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
-    pip install django-environ gunicorn whitenoise psycopg2-binary && \
-    pip install -r /app/climweb/requirements/base.txt 
+    pip install django-environ gunicorn whitenoise && \
+    pip install -r climweb/requirements/base.txt 
 
 # Copy the entire project
-COPY climweb/ /app/climweb/
+COPY climweb/ ./climweb/
 
-# Set environment variables for GDAL/GEOS
-ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu \
-    GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
-
-# Verify manage.py exists
-RUN ls -la /app/climweb/src/climweb/manage.py && \
-    echo "✓ manage.py found at /app/climweb/src/climweb/manage.py"
-
-# Create an entrypoint script to handle startup tasks
-RUN echo '#!/bin/bash' > /entrypoint.sh && \
-    echo 'set -e' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# Run migrations' >> /entrypoint.sh && \
-    echo 'echo "Running database migrations..."' >> /entrypoint.sh && \
-    echo 'python manage.py migrate --noinput || echo "Migration failed or not needed"' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# Collect static files' >> /entrypoint.sh && \
-    echo 'echo "Collecting static files..."' >> /entrypoint.sh && \
-    echo 'python manage.py collectstatic --noinput || echo "Collectstatic failed"' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# Start Gunicorn' >> /entrypoint.sh && \
-    echo 'echo "Starting Gunicorn..."' >> /entrypoint.sh && \
-    echo 'exec gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -' >> /entrypoint.sh && \
-    chmod +x /entrypoint.sh
+# Create entrypoint script
+RUN printf '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "Waiting for database to be ready..."\n\
+sleep 5\n\
+\n\
+echo "Running migrations..."\n\
+cd /app/climweb/src/climweb && python manage.py migrate --noinput || echo "Migration step completed"\n\
+\n\
+echo "Collecting static files..."\n\
+cd /app/climweb/src/climweb && python manage.py collectstatic --noinput || echo "Collectstatic completed"\n\
+\n\
+echo "Starting Gunicorn..."\n\
+exec gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -\n' > /entrypoint.sh \
+    && chmod +x /entrypoint.sh
 
 # Expose port (Railway will override this)
 EXPOSE 8000
