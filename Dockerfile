@@ -51,10 +51,10 @@ echo "Waiting for database to be ready..."\n\
 sleep 5\n\
 \n\
 echo "Running migrations..."\n\
-cd /app/climweb/src/climweb && python manage.py migrate --noinput || echo "Migration step completed"\n\
+cd /app/climweb/src/climweb && python manage.py migrate --noinput\n\
 \n\
 echo "Collecting static files..."\n\
-cd /app/climweb/src/climweb && python manage.py collectstatic --noinput || echo "Collectstatic completed"\n\
+cd /app/climweb/src/climweb && python manage.py collectstatic --noinput\n\
 \n\
 echo "Starting Gunicorn..."\n\
 exec gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -\n' > /entrypoint.sh \
