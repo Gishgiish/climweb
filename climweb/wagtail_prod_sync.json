@@ -1,0 +1,63 @@
+[
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$LDkO4K79KLxGJsqfiD16wz$VpFrOhu4shyn6Z2CNiRqddfhZDib+5gTTddWt7JsG8Q=",
+    "last_login": null,
+    "is_superuser": true,
+    "username": "africlimate",
+    "first_name": "",
+    "last_name": "",
+    "email": "africlimate.center@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-19T18:03:52.336Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$dIqSxOqT3vVzFUeg9JP1Yc$+vTqUGRgH8vIT7olMCHjaTRk+3qijYHMDp+T1suGuXY=",
+    "last_login": null,
+    "is_superuser": true,
+    "username": "Afri",
+    "first_name": "",
+    "last_name": "",
+    "email": "africlimate.center@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-19T18:11:01.653Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$GacNySU5lfZN6EgQMkKN58$kDGaX9gID47HNh29rWoBAI2ohk0hZLI1QmNLHmdcDfI=",
+    "last_login": "2026-04-18T08:55:23.931Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "admin@africlimate.org",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-20T06:55:36.472Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "wagtailcore.site",
+  "fields": {
+    "hostname": "climweb-production.up.railway.app",
+    "port": 80,
+    "site_name": "AfriClimate Center For Adaptation",
+    "root_page": 3,
+    "is_default_site": true
+  }
+}
+]
