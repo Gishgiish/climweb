@@ -47,6 +47,9 @@ COPY climweb/ ./climweb/
 RUN printf '#!/bin/bash\n\
 set -e\n\
 \n\
+# Railway provides $PORT, default to 8080 if not set\n\
+PORT=${PORT:-8080}\n\
+\n\
 echo "Waiting for database to be ready..."\n\
 sleep 20\n\
 \n\
