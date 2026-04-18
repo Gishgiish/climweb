@@ -61,7 +61,7 @@ exec gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -\
     && chmod +x /entrypoint.sh
 
 # Expose port (Railway will override this)
-EXPOSE 8000
+EXPOSE 8080
 
 # Use entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
