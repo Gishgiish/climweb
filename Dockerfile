@@ -59,6 +59,9 @@ cd /app/climweb/src/climweb && python manage.py migrate --noinput\n\
 echo "Collecting static files..."\n\
 cd /app/climweb/src/climweb && python manage.py collectstatic --noinput\n\
 \n\
+echo "Fixing Wagtail site configuration..."\n\
+cd /app/climweb/src/climweb && python manage.py fix_site || echo "Site fix skipped"\n\
+\n\
 echo "Starting Gunicorn..."\n\
 exec gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -\n' > /entrypoint.sh \
     && chmod +x /entrypoint.sh
