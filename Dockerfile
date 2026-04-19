@@ -44,79 +44,111 @@ RUN pip install --upgrade pip && \
 COPY climweb/ ./climweb/
 
 # Create entrypoint script
-RUN printf '#!/bin/bash\n\
-set -e\n\
-\n\
-# Railway provides $PORT, default to 8080 if not set\n\
-PORT=${PORT:-8080}\n\
-\n\
-echo "Waiting for database to be ready..."\n\
-sleep 20\n\
-\n\
-echo "Running migrations..."\n\
-cd /app/climweb/src/climweb && python manage.py migrate --noinput\n\
-\n\
-echo "Collecting static files..."\n\
-cd /app/climweb/src/climweb && python manage.py collectstatic --noinput\n\
-\n\
-echo "Loading site/user fixture if present..."\n\
-cd /app/climweb/src/climweb && python manage.py loaddata /app/climweb/wagtail_prod_sync.json || true\n\
-echo "Configuring Wagtail site and superuser..."\n\
-cd /app/climweb/src/climweb && python manage.py shell << 'PYEOF'\n\
-import os, traceback\n\
-from wagtail.models import Site, Page\n\
-from django.contrib.auth import get_user_model\n\
-User = get_user_model()\n\
-\n\
-# Read superuser info from environment; if unset we skip creation and prompt you to set them\n\
-username = os.environ.get('DJANGO_SUPERUSER_USERNAME')\n\
-email = os.environ.get('DJANGO_SUPERUSER_EMAIL')\n\
-password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')\n\
-\n\
-try:\n\
-    # Determine site hostname (Railway typically sets RAILWAY_PUBLIC_DOMAIN)\n\
-    site_hostname = os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'climweb-production.up.railway.app')\n\
-    # Delete conflicting sites (localhost, wildcard, or old railway domains)\n\
-    Site.objects.filter(hostname__in=['localhost', '127.0.0.1', '*', 'climweb-production.up.railway.app']).delete()\n\
-    # Get the homepage - prefer a stable slug, then title, then fallback to a root-level page\n\
-    homepage = Page.objects.filter(slug='home').first() or Page.objects.filter(title__icontains='AfriClimate').first() or Page.objects.filter(depth=2).first()\n\
-    if homepage:\n\
-        Site.objects.create(\n\
-            hostname=site_hostname,\n\
-            port=80,\n\
-            root_page=homepage,\n\
-            is_default_site=True,\n\
-            site_name='AfriClimate Center For Adaptation'\n\
-        )\n\
-        print(f"Site created for: {site_hostname} -> {homepage.title}")\n\
-    else:\n\
-        print('WARNING: No homepage found. Site not configured.')\n\
-except Exception:\n\
-    traceback.print_exc()\n\
-\n\
-try:\n\
-    if username:\n\
-        if not User.objects.filter(username=username).exists():\n\
-            User.objects.create_superuser(username=username, email=email or '', password=password or '')\n\
-            print(f'Superuser {username} created')\n\
-        else:\n\
-            print(f'Superuser {username} already exists')\n\
-    else:\n\
-        print('DJANGO_SUPERUSER_USERNAME not set; skipping superuser creation. Set DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL, and DJANGO_SUPERUSER_PASSWORD in Railway secrets to create one automatically.')\n\
-except Exception:\n\
-    traceback.print_exc()\n\
-\n\
-# Verification output for logs\n\
-try:\n\
-    print('Sites:', list(Site.objects.values('id','hostname','root_page','is_default_site')))\n\
-    print('Superusers:', list(User.objects.filter(is_superuser=True).values('username','email')))\n\
-except Exception:\n\
-    traceback.print_exc()\n\
-PYEOF\n\
-\n\
-echo "Starting Gunicorn..."\n\
-exec gunicorn climweb.config.wsgi:application --bind 0.0.0.0:$PORT --log-file -\n' > /entrypoint.sh \
-    && chmod +x /entrypoint.sh
+RUN cat > /entrypoint.sh << 'ENTRYEOF'
+#!/bin/bash
+set -e
+
+# Railway provides $PORT, default to 8080 if not set
+PORT=${PORT:-8080}
+
+echo "Waiting for database to be ready..."
+sleep 20
+
+echo "Running migrations..."
+cd /app/climweb/src/climweb && python manage.py migrate --noinput
+
+echo "Collecting static files..."
+cd /app/climweb/src/climweb && python manage.py collectstatic --noinput
+
+echo "Loading production fixture if present..."
+if [ -f /app/climweb/wagtail_prod_sync.json ]; then
+    cd /app/climweb/src/climweb && python manage.py loaddata /app/climweb/wagtail_prod_sync.json || true
+else
+    echo "No fixture file found at /app/climweb/wagtail_prod_sync.json, skipping."
+fi
+
+echo "Configuring Wagtail site and superuser..."
+cd /app/climweb/src/climweb && python manage.py shell << 'PYEOF'
+import os
+import traceback
+from wagtail.models import Site, Page
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+# Read superuser credentials from environment variables
+username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
+email    = os.environ.get('DJANGO_SUPERUSER_EMAIL', '')
+password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '')
+
+# --- Wagtail site configuration ---
+try:
+    site_hostname = os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'climweb-production.up.railway.app')
+
+    # Remove any stale/conflicting default sites
+    Site.objects.filter(
+        hostname__in=['localhost', '127.0.0.1', '*', 'climweb-production.up.railway.app']
+    ).delete()
+
+    # Homepage detection: slug='home' is most reliable, then title match, then first root-level page
+    homepage = (
+        Page.objects.filter(slug='home').first()
+        or Page.objects.filter(title__icontains='AfriClimate').first()
+        or Page.objects.filter(depth=2).first()
+    )
+
+    if homepage:
+        site, created = Site.objects.get_or_create(
+            hostname=site_hostname,
+            defaults=dict(
+                port=80,
+                root_page=homepage,
+                is_default_site=True,
+                site_name='AfriClimate Center For Adaptation',
+            ),
+        )
+        if created:
+            print(f"Site created: {site_hostname} -> {homepage.title} (id={homepage.id})")
+        else:
+            print(f"Site already exists: {site_hostname} -> {site.root_page} (id={site.id})")
+    else:
+        print("WARNING: No suitable homepage found. Wagtail site not configured.")
+except Exception:
+    print("ERROR: Failed to configure Wagtail site:")
+    traceback.print_exc()
+
+# --- Superuser creation ---
+try:
+    if username:
+        if not User.objects.filter(username=username).exists():
+            User.objects.create_superuser(username=username, email=email, password=password)
+            print(f"Superuser created: {username}")
+        else:
+            print(f"Superuser already exists: {username}")
+    else:
+        print(
+            "WARNING: DJANGO_SUPERUSER_USERNAME is not set. "
+            "Set DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL, and "
+            "DJANGO_SUPERUSER_PASSWORD in Railway environment variables to "
+            "create a superuser automatically."
+        )
+except Exception:
+    print("ERROR: Failed to create superuser:")
+    traceback.print_exc()
+
+# --- Verification output for deployment logs ---
+try:
+    print("Current sites:", list(Site.objects.values('id', 'hostname', 'root_page_id', 'is_default_site')))
+    print("Superusers:", list(User.objects.filter(is_superuser=True).values('username', 'email')))
+except Exception:
+    traceback.print_exc()
+PYEOF
+
+echo "Starting Gunicorn..."
+exec gunicorn climweb.config.wsgi:application --bind "0.0.0.0:${PORT}" --log-file -
+ENTRYEOF
+RUN chmod +x /entrypoint.sh
+
 
 # Expose port (Railway will override this)
 EXPOSE 8080
