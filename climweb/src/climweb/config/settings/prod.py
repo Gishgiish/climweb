@@ -39,7 +39,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Database configuration from DATABASE_URL
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-if not DATABASE_URL:
+if not DATABASE_URL or not DATABASE_URL.strip():
     raise ImproperlyConfigured("DATABASE_URL environment variable must be set")
 
 # Parse the URL from the environment
