@@ -255,7 +255,8 @@ class HomePage(MetadataPageMixin, Page):
         map_settings_url = get_full_url(request, reverse("home-map-settings"))
         context.update({
             "home_map_settings_url": map_settings_url,
-            "home_weather_widget_url": get_full_url(request, reverse("home-weather-widget")),
+            # Use a relative URL for the widget so the browser fetches it same-origin
+            "home_weather_widget_url": reverse("home-weather-widget"),
         })
         
         # Add OpenWeatherMap API key from env or settings

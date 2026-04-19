@@ -1,1 +1,68 @@
-Nothing should be ignored based on the provided file changes, as they only include source/config files (.py and .json) without any build artifacts, dependencies, or temporary files.
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.tar
+
+
+# Virtual environments
+venv/
+ENV/
+.venv/
+env/
+venv.bak/
+
+# pip cache
+.cache/pip
+
+# pyenv
+.python-version
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Media and uploaded files
+/media/
+
+# Collected static files (do not ignore your source static files checked into repo)
+/staticfiles/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# IDEs
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+
+# Environment variables
+.env
+
+# Docker development overrides
+docker-compose.override.yml
+
+# Node
+node_modules/
