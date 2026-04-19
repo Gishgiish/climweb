@@ -90,11 +90,11 @@ try:
         hostname__in=['localhost', '127.0.0.1', '*', 'climweb-production.up.railway.app']
     ).delete()
 
-    # Homepage detection: slug='home' is most reliable, then title match, then first root-level page
+    # Homepage detection: slug='home' is most reliable, then title match.
+    # NOTE: No depth=2 fallback — that catches the default Wagtail welcome page (id=2).
     homepage = (
         Page.objects.filter(slug='home').first()
         or Page.objects.filter(title__icontains='AfriClimate').first()
-        or Page.objects.filter(depth=2).first()
     )
 
     if homepage:
@@ -112,7 +112,11 @@ try:
         else:
             print(f"Site already exists: {site_hostname} -> {site.root_page} (id={site.id})")
     else:
-        print("WARNING: No suitable homepage found. Wagtail site not configured.")
+        print("WARNING: No suitable homepage found (no page with slug='home' or title containing 'AfriClimate').")
+        print("WARNING: Wagtail site NOT configured — set it manually via the Wagtail admin (/cms/sites/).")
+        print("INFO: All pages currently in the database:")
+        for p in Page.objects.all().order_by('depth', 'id').values('id', 'slug', 'title', 'depth'):
+            print(f"  id={p['id']}  depth={p['depth']}  slug={p['slug']!r}  title={p['title']!r}")
 except Exception:
     print("ERROR: Failed to configure Wagtail site:")
     traceback.print_exc()
