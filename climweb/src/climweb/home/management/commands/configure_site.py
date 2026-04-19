@@ -28,31 +28,36 @@ class Command(BaseCommand):
         # Configure site
         try:
             site_hostname = os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'climweb-production.up.railway.app')
-            # Remove common conflicting sites
-            Site.objects.filter(hostname__in=['localhost', '127.0.0.1', '*', 'climweb-production.up.railway.app']).delete()
-
+            
+            # Find the correct homepage first
             homepage = (
                 Page.objects.filter(slug='home').first()
                 or Page.objects.filter(title__icontains='AfriClimate').first()
                 or Page.objects.filter(depth=2).first()
             )
 
-            if homepage:
-                obj, created = Site.objects.update_or_create(
-                    hostname=site_hostname,
-                    defaults={
-                        'port': 80,
-                        'root_page': homepage,
-                        'is_default_site': True,
-                        'site_name': 'AfriClimate Center For Adaptation',
-                    },
-                )
-                if created:
-                    self.stdout.write(self.style.SUCCESS(f'Created site {site_hostname} -> {homepage.title}'))
-                else:
-                    self.stdout.write(self.style.SUCCESS(f'Updated site {site_hostname} -> {homepage.title}'))
-            else:
+            if not homepage:
                 self.stderr.write('No homepage found; site not configured')
+                return
+
+            # Delete ALL existing sites to start fresh
+            Site.objects.all().delete()
+            self.stdout.write('Cleared all existing sites')
+
+            # Create the correct site
+            obj, created = Site.objects.update_or_create(
+                hostname=site_hostname,
+                defaults={
+                    'port': 80,
+                    'root_page': homepage,
+                    'is_default_site': True,
+                    'site_name': 'AfriClimate Center For Adaptation',
+                },
+            )
+            if created:
+                self.stdout.write(self.style.SUCCESS(f'Created site {site_hostname} -> {homepage.title} (id={homepage.id})'))
+            else:
+                self.stdout.write(self.style.SUCCESS(f'Updated site {site_hostname} -> {homepage.title} (id={homepage.id})'))
         except Exception:
             traceback.print_exc()
 

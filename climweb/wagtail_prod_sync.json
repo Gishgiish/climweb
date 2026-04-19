@@ -49,15 +49,5 @@
     "groups": [],
     "user_permissions": []
   }
-},
-{
-  "model": "wagtailcore.site",
-  "fields": {
-    "hostname": "climweb-production.up.railway.app",
-    "port": 80,
-    "site_name": "AfriClimate Center For Adaptation",
-    "root_page": 3,
-    "is_default_site": true
-  }
 }
 ]
