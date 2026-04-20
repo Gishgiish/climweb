@@ -1,6 +1,7 @@
 [build]
-# Use the production Dockerfile for Railway builds
-builder = "Dockerfile.prod"
+# Use Railway's Dockerfile builder and point it at our production Dockerfile
+builder = "DOCKERFILE.PROD"
+
 
 [deploy]
 healthcheckPath = "/"
