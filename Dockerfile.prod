@@ -55,7 +55,8 @@ ENV PIP_NO_CACHE_DIR=0
 COPY --chown=$UID:$GID ./climweb/requirements/base.txt /climweb/requirements/
 RUN python3 -m venv /climweb/venv && \
     . /climweb/venv/bin/activate && \
-    pip3 install -r /climweb/requirements/base.txt
+    pip3 install -r /climweb/requirements/base.txt & \
+    chown -R $UID:$GID /climweb/venv
 
 # NOW switch to non-root user
 USER $UID:$GID
