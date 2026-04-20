@@ -73,6 +73,9 @@ RUN mkdir -p /climweb/web/src/climweb/static \
 WORKDIR /climweb/web
 
 ENV PYTHONUNBUFFERED=1
+ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgdal.so
+ENV GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgeos_c.so.1
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 
 # Copy deploy plugins
 COPY --chown=$UID:$GID ./deploy/plugins/*.sh /climweb/plugins/
@@ -83,7 +86,7 @@ ENV GEOMANAGER_AUTO_INGEST_RASTER_DATA_DIR=/climweb/geomanager/data
 RUN chmod a+x /climweb/climweb/docker/docker-entrypoint.sh && \
     /climweb/venv/bin/pip install --no-cache-dir -e /climweb/climweb/
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/climweb/web/docker/docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/climweb/climweb/docker/docker-entrypoint.sh"]
 
 ENV PATH="/climweb/venv/bin:$PATH"
 ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.prod'

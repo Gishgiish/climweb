@@ -190,6 +190,12 @@ source /climweb/plugins/utils.sh
 
 setup_otel_vars
 
+echo "Inspecting Django DB engine and DATABASE_URL (sanitized)..."
+python -m climweb.scripts.verify_db || {
+    echo "verify_db failed; aborting startup"
+    exit 2
+}
+
 case "$1" in
 django-dev)
     run_setup_commands_if_configured

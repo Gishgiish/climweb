@@ -9,19 +9,10 @@ sleep 20
 
 echo "Inspecting Django DB engine and DATABASE_URL (sanitized)..."
 cd /app/climweb/src/climweb || true
-python - <<'PY'
-import os, django, json
-os.environ.setdefault('DJANGO_SETTINGS_MODULE','climweb.config.settings.prod')
-try:
-        django.setup()
-        from django.conf import settings
-        cfg = dict(settings.DATABASES.get('default', {}))
-        cfg.pop('PASSWORD', None)
-        cfg.pop('USER', None)
-        print('SANITIZED_DATABASE:', json.dumps(cfg))
-except Exception as e:
-        print('Failed to load Django settings:', e)
-PY
+python -m climweb.scripts.verify_db || {
+    echo "verify_db failed; aborting startup"
+    exit 2
+}
 
 echo "Running migrations (with retries)..."
 cd /app/climweb/src/climweb || true

@@ -48,8 +48,8 @@ if DATABASE_URL is None or DATABASE_URL.strip() == "":
 if not DATABASE_URL or not DATABASE_URL.strip():
     raise ImproperlyConfigured("DATABASE_URL environment variable must be set")
 
-# Parse the URL from the environment
-db_config = dj_database_url.parse(DATABASE_URL)
+# Parse the URL from the environment (explicitly request the project's DB engine)
+db_config = dj_database_url.parse(DATABASE_URL, engine=DB_ENGINE)
 
 # Ensure we use the project's DB_ENGINE (PostGIS wrapper) so GeoDjango ops are available
 try:
@@ -58,7 +58,8 @@ except NameError:
     # Fall back to the standard PostGIS backend if DB_ENGINE is not present
     DB_ENGINE = "django.contrib.gis.db.backends.postgis"
 
-db_config.setdefault('ENGINE', DB_ENGINE)
+# Hard-set the engine to avoid accidental fallback to a plain postgresql backend
+db_config['ENGINE'] = DB_ENGINE
 
 # EXPLICITLY force sslmode to disable to override any URL params or defaults
 db_config.setdefault('OPTIONS', {})
