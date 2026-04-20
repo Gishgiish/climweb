@@ -19,6 +19,8 @@ ENV/
 .venv/
 env/
 venv.bak/
+.env
+.env.backup
 
 # pip cache
 .cache/pip
@@ -72,3 +74,5 @@ node_modules/
 *.dump
 *conf
 *.conf.backup
+climweb_db_backup.sql
+climweb_backup.sql

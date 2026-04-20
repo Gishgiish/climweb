@@ -7,8 +7,35 @@ PORT=${PORT:-8080}
 echo "Waiting for database to be ready..."
 sleep 20
 
-echo "Running migrations..."
-cd /app/climweb/src/climweb && python manage.py migrate --noinput
+echo "Inspecting Django DB engine and DATABASE_URL (sanitized)..."
+cd /app/climweb/src/climweb || true
+python - <<'PY'
+import os, django, json
+os.environ.setdefault('DJANGO_SETTINGS_MODULE','climweb.config.settings.prod')
+try:
+        django.setup()
+        from django.conf import settings
+        cfg = dict(settings.DATABASES.get('default', {}))
+        cfg.pop('PASSWORD', None)
+        cfg.pop('USER', None)
+        print('SANITIZED_DATABASE:', json.dumps(cfg))
+except Exception as e:
+        print('Failed to load Django settings:', e)
+PY
+
+echo "Running migrations (with retries)..."
+cd /app/climweb/src/climweb || true
+MAX_ATTEMPTS=6
+attempt=1
+until python manage.py migrate --noinput; do
+    if [ $attempt -ge $MAX_ATTEMPTS ]; then
+        echo "Migrations failed after $attempt attempts. Exiting."
+        exit 1
+    fi
+    echo "Migrate attempt $attempt failed, retrying in 5s..."
+    attempt=$((attempt+1))
+    sleep 5
+done
 
 echo "Collecting static files..."
 cd /app/climweb/src/climweb && python manage.py collectstatic --noinput

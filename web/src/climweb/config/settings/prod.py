@@ -25,6 +25,7 @@ if DATABASE_URL is None or DATABASE_URL.strip() == "":
 DATABASES = {
     'default': dj_database_url.config(
         default=DATABASE_URL,
+        engine=DB_ENGINE,
         conn_max_age=600,  # Keep connections alive longer
         conn_health_checks=True,
     )

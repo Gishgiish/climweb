@@ -51,6 +51,15 @@ if not DATABASE_URL or not DATABASE_URL.strip():
 # Parse the URL from the environment
 db_config = dj_database_url.parse(DATABASE_URL)
 
+# Ensure we use the project's DB_ENGINE (PostGIS wrapper) so GeoDjango ops are available
+try:
+    DB_ENGINE  # defined in base.py via import *
+except NameError:
+    # Fall back to the standard PostGIS backend if DB_ENGINE is not present
+    DB_ENGINE = "django.contrib.gis.db.backends.postgis"
+
+db_config.setdefault('ENGINE', DB_ENGINE)
+
 # EXPLICITLY force sslmode to disable to override any URL params or defaults
 db_config.setdefault('OPTIONS', {})
 db_config['OPTIONS']['sslmode'] = 'disable'
