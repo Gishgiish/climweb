@@ -39,8 +39,12 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Database configuration from DATABASE_URL
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-if not DATABASE_URL:
-    raise ImproperlyConfigured("DATABASE_URL environment variable must be set")
+# Fail loudly on missing or empty DATABASE_URL (avoid dj_database_url.parse('') ValueError)
+if DATABASE_URL is None or DATABASE_URL.strip() == "":
+    raise ImproperlyConfigured(
+        "DATABASE_URL environment variable must be set and non-empty. "
+        "Example: postgresql://user:password@host:5432/dbname"
+    )
 
 # Parse the URL from the environment
 db_config = dj_database_url.parse(DATABASE_URL)

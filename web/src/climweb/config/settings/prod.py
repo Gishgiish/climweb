@@ -1,6 +1,7 @@
 from .base import *
 import os
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 # SECURITY: Never run with DEBUG=True in production
 DEBUG = False
@@ -13,9 +14,17 @@ ALLOWED_HOSTS = [
 ]
 
 # Database from Render's DATABASE_URL environment variable
+# Fail loudly if DATABASE_URL is missing or empty to avoid ambiguous errors
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL is None or DATABASE_URL.strip() == "":
+    raise ImproperlyConfigured(
+        "DATABASE_URL environment variable must be set and non-empty. "
+        "Example: postgresql://user:password@host:5432/dbname"
+    )
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
+        default=DATABASE_URL,
         conn_max_age=600,  # Keep connections alive longer
         conn_health_checks=True,
     )

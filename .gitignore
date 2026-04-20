@@ -66,3 +66,9 @@ docker-compose.override.yml
 
 # Node
 node_modules/
+
+
+*.sql
+*.dump
+*conf
+*.conf.backup
