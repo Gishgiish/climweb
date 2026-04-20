@@ -82,6 +82,15 @@ db_config['CONN_MAX_AGE'] = 600
 DATABASES = {
     'default': db_config
 }
+# Emit a sanitized DATABASE config to stdout so deploy logs contain the effective DB settings
+try:
+    import json
+    san = dict(DATABASES['default'])
+    san.pop('PASSWORD', None)
+    san.pop('USER', None)
+    print('SANITIZED_DATABASE_FROM_SETTINGS:', json.dumps(san))
+except Exception:
+    pass
 # Verify that the configured DB backend provides GeoDjango/PostGIS operations.
 # This helps fail early with a clear message when a non-GIS backend is selected
 try:
@@ -95,5 +104,10 @@ try:
         )
 except Exception as e:
     # If importlib fails or the check fails, raise an explicit error so deploy logs contain a clear cause.
-    raise ImproperlyConfigured(f"Failed to validate DB engine '{DB_ENGINE}': {e}")
+    # Suggest the emergency overrides admins can use to force a PostGIS backend.
+    raise ImproperlyConfigured(
+        f"Failed to validate DB engine '{DB_ENGINE}': {e}. "
+        "If this is an emergency, set environment variable DB_ENGINE_OVERRIDE to 'django.contrib.gis.db.backends.postgis' "
+        "or set FORCE_DB_ENGINE_TO_POSTGIS=true and restart the service."
+    )
 # Note: Health check endpoint already exists at /api/_health/ in base urls
