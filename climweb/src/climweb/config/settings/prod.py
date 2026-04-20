@@ -45,6 +45,8 @@ if DATABASE_URL is None or DATABASE_URL.strip() == "":
         "DATABASE_URL environment variable must be set and non-empty. "
         "Example: postgresql://user:password@host:5432/dbname"
     )
+if not DATABASE_URL or not DATABASE_URL.strip():
+    raise ImproperlyConfigured("DATABASE_URL environment variable must be set")
 
 # Parse the URL from the environment
 db_config = dj_database_url.parse(DATABASE_URL)
