@@ -58,6 +58,16 @@ except NameError:
     # Fall back to the standard PostGIS backend if DB_ENGINE is not present
     DB_ENGINE = "django.contrib.gis.db.backends.postgis"
 
+# Emergency override: allow ops teams to force a known PostGIS engine via env var.
+# - `DB_ENGINE_OVERRIDE` if set will be used verbatim (useful for testing)
+# - `FORCE_DB_ENGINE_TO_POSTGIS=true` will set the engine to Django's PostGIS backend
+db_engine_override = os.environ.get('DB_ENGINE_OVERRIDE')
+if db_engine_override:
+    DB_ENGINE = db_engine_override
+else:
+    if os.environ.get('FORCE_DB_ENGINE_TO_POSTGIS', '').lower() in ('1', 'true', 'yes'):
+        DB_ENGINE = 'django.contrib.gis.db.backends.postgis'
+
 # Hard-set the engine to avoid accidental fallback to a plain postgresql backend
 db_config['ENGINE'] = DB_ENGINE
 
@@ -72,4 +82,18 @@ db_config['CONN_MAX_AGE'] = 600
 DATABASES = {
     'default': db_config
 }
+# Verify that the configured DB backend provides GeoDjango/PostGIS operations.
+# This helps fail early with a clear message when a non-GIS backend is selected
+try:
+    import importlib
+    backend_mod = importlib.import_module(DB_ENGINE + ".base")
+    DBWrapper = getattr(backend_mod, 'DatabaseWrapper', None)
+    if DBWrapper is None or not hasattr(DBWrapper, 'geo_db_type'):
+        raise ImproperlyConfigured(
+            f"Configured DATABASE ENGINE '{DB_ENGINE}' does not appear to be a GeoDjango/PostGIS backend. "
+            "Ensure DB_ENGINE points to a backend package implementing a PostGIS DatabaseWrapper (e.g. 'climweb.config.db_engine' or 'django.contrib.gis.db.backends.postgis')."
+        )
+except Exception as e:
+    # If importlib fails or the check fails, raise an explicit error so deploy logs contain a clear cause.
+    raise ImproperlyConfigured(f"Failed to validate DB engine '{DB_ENGINE}': {e}")
 # Note: Health check endpoint already exists at /api/_health/ in base urls
