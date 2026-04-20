@@ -2,13 +2,10 @@
 
 FROM ghcr.io/osgeo/gdal:ubuntu-full-3.7.0 as base
 
-ARG UID=1001
-ENV UID=${UID}
-ARG GID=1001
-ENV GID=${GID}
-
-ARG POSTGRES_VERSION=15
-ENV POSTGRES_VERSION=${POSTGRES_VERSION}
+ARG UID
+ENV UID=${UID:-1001}
+ARG GID
+ENV GID=${GID:-1001}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
