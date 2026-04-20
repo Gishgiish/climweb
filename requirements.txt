@@ -3,7 +3,7 @@ Django>=5.0,<5.3
 wagtail>=6.0,<7.0
 
 # Database
-psycopg2-binary>=2.9
+psycopg2-binary==2.9.10
 
 # Production server
 gunicorn>=21.0
