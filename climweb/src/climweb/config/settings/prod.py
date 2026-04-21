@@ -15,11 +15,20 @@ if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['']:
 # Always add Railway domains
 ALLOWED_HOSTS.extend(['.up.railway.app', '.railway.app'])
 
+# If Railway sets a public domain for this deploy, include it explicitly
+railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN') or os.environ.get('RAILWAY_STATIC_URL')
+if railway_domain:
+    railway_domain = railway_domain.strip()
+    if railway_domain:
+        ALLOWED_HOSTS.append(railway_domain)
+
 # SECURITY: CSRF trusted origins for Railway and custom domains
 CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
 CSRF_TRUSTED_ORIGINS = [origin for origin in CSRF_TRUSTED_ORIGINS if origin]  # Remove empty strings
 # Always add Railway domains
 CSRF_TRUSTED_ORIGINS.extend(['https://*.up.railway.app', 'https://*.railway.app'])
+if railway_domain:
+    CSRF_TRUSTED_ORIGINS.append('https://%s' % railway_domain)
 
 # SECURITY: SSL/HTTPS settings
 SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True').lower() in ('true', '1', 'yes')

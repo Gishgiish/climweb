@@ -77,8 +77,8 @@ run_setup_commands_if_configured() {
 
         # collect staticfiles
     if [ "$COLLECT_STATICFILES_ON_STARTUP" = "true" ]; then
-        echo "python /climweb/climweb/src/climweb/manage.py collectstatic --clear --noinput"
-        /climweb/climweb/src/climweb/manage.py collectstatic --clear --noinput
+        echo "python /climweb/climweb/src/climweb/manage.py collectstatic --clear --noinput --verbosity=0"
+        /climweb/climweb/src/climweb/manage.py collectstatic --clear --noinput --verbosity=0
     fi
 
     # initialize geomanager
@@ -164,9 +164,15 @@ setup_otel_vars(){
 # ======================================================
 
 if [[ -z "${1:-}" ]]; then
-    echo "Must provide arguments to docker-entrypoint.sh"
-    show_help
-    exit 1
+    # Default to gunicorn in production containers to ensure the service
+    # always starts when no explicit command is provided.
+    if [[ "${DJANGO_SETTINGS_MODULE:-}" == *"prod"* ]] || [[ "${CLIMWEB_DEPLOYMENT_ENV:-}" == "production" ]]; then
+        set -- gunicorn
+    else
+        echo "Must provide arguments to docker-entrypoint.sh"
+        show_help
+        exit 1
+    fi
 fi
 
 # activate virtualenv
@@ -190,6 +196,14 @@ source /climweb/plugins/utils.sh
 setup_otel_vars
 
 echo "Inspecting Django DB engine and DATABASE_URL (sanitized)..."
+# Ensure LD_LIBRARY_PATH includes common system library directory used by GDAL
+export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}
+echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+
+# Print GDAL version for debugging early in startup
+python -c "from osgeo import gdal; print('GDAL version:', getattr(gdal, '__version__', 'unknown'))" || echo "Warning: unable to import GDAL to print version"
+
+# Run verify script (this will call django.setup() before DB checks)
 python -m climweb.scripts.verify_db || {
     echo "verify_db failed; aborting startup"
     exit 2

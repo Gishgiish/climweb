@@ -104,6 +104,22 @@ ENV GEOMANAGER_AUTO_INGEST_RASTER_DATA_DIR=/climweb/geomanager/data
 RUN chmod a+x /climweb/climweb/docker/docker-entrypoint.sh && \
     /climweb/venv/bin/pip install --no-cache-dir -e /climweb/climweb/
 
+# Pre-generate matplotlib font cache (fontlist-v330.json) if matplotlib is available.
+# This reduces runtime first-start delays and avoids font-cache warnings.
+RUN /climweb/venv/bin/python - <<'PY' || true
+import importlib, sys
+spec = importlib.util.find_spec('matplotlib')
+if spec:
+    try:
+        from matplotlib import font_manager
+        font_manager._rebuild()
+        print('matplotlib fontlist rebuilt')
+    except Exception as e:
+        print('failed to rebuild matplotlib fontlist:', e, file=sys.stderr)
+else:
+    print('matplotlib not installed; skipping fontlist rebuild')
+PY
+
 ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/climweb/climweb/docker/docker-entrypoint.sh"]
 
 # Ensure venv is first on PATH at container runtime
