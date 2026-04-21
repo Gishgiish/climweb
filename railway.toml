@@ -1,5 +1,7 @@
 [build]
+dockerfilePath = "Dockerfile.prod"
 builder = "DOCKERFILE"
+buildCommand = "--target=base"
 
 [deploy]
 healthcheckPath = "/"
