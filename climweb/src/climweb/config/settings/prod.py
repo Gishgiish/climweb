@@ -91,23 +91,4 @@ try:
     print('SANITIZED_DATABASE_FROM_SETTINGS:', json.dumps(san))
 except Exception:
     pass
-# Verify that the configured DB backend provides GeoDjango/PostGIS operations.
-# This helps fail early with a clear message when a non-GIS backend is selected
-try:
-    import importlib
-    backend_mod = importlib.import_module(DB_ENGINE + ".base")
-    DBWrapper = getattr(backend_mod, 'DatabaseWrapper', None)
-    if DBWrapper is None or not hasattr(DBWrapper, 'geo_db_type'):
-        raise ImproperlyConfigured(
-            f"Configured DATABASE ENGINE '{DB_ENGINE}' does not appear to be a GeoDjango/PostGIS backend. "
-            "Ensure DB_ENGINE points to a backend package implementing a PostGIS DatabaseWrapper (e.g. 'climweb.config.db_engine' or 'django.contrib.gis.db.backends.postgis')."
-        )
-except Exception as e:
-    # If importlib fails or the check fails, raise an explicit error so deploy logs contain a clear cause.
-    # Suggest the emergency overrides admins can use to force a PostGIS backend.
-    raise ImproperlyConfigured(
-        f"Failed to validate DB engine '{DB_ENGINE}': {e}. "
-        "If this is an emergency, set environment variable DB_ENGINE_OVERRIDE to 'django.contrib.gis.db.backends.postgis' "
-        "or set FORCE_DB_ENGINE_TO_POSTGIS=true and restart the service."
-    )
 # Note: Health check endpoint already exists at /api/_health/ in base urls
