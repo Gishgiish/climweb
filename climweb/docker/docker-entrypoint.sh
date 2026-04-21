@@ -18,6 +18,10 @@ GUNICORN_NUM_OF_WORKERS=${GUNICORN_NUM_OF_WORKERS:-}
 CLIMWEB_CELERY_BEAT_DEBUG_LEVEL=${CLIMWEB_CELERY_BEAT_DEBUG_LEVEL:-INFO}
 
 CLIMWEB_PORT="${CLIMWEB_PORT:-8000}"
+# If a platform provides a PORT (e.g. Railway), prefer it so the container
+# binds the port the platform expects.
+CLIMWEB_PORT="${PORT:-${CLIMWEB_PORT}}"
+export CLIMWEB_PORT
 
 # get the current version of the app using the installed `climweb` package
 # use the venv python to ensure package paths are available
