@@ -19,8 +19,9 @@ CLIMWEB_CELERY_BEAT_DEBUG_LEVEL=${CLIMWEB_CELERY_BEAT_DEBUG_LEVEL:-INFO}
 
 CLIMWEB_PORT="${CLIMWEB_PORT:-8000}"
 
-# get the current version of the app
-CLIMWEB_APP_VERSION=$(PYTHONPATH=/climweb/web/src/climweb python -c "import version; print(version.__version__)")
+# get the current version of the app using the installed `climweb` package
+# use the venv python to ensure package paths are available
+CLIMWEB_APP_VERSION=$(/climweb/venv/bin/python -c "import climweb.version as v; print(v.__version__)")
 
 show_help() {
     echo """
@@ -50,8 +51,7 @@ django-dev      : Start a normal Climweb backend django development server, perf
 }
 
 show_startup_banner() {
-  # Use https://manytools.org/hacker-tools/ascii-banner/ and the font ANSI Shadow / Wide / Wide to generate
-cat <<EOF
+  cat <<EOF
 =========================================================================================
  ██████╗██╗     ██╗███╗   ███╗██╗    ██╗███████╗██████╗
 ██╔════╝██║     ██║████╗ ████║██║    ██║██╔════╝██╔══██╗
@@ -71,21 +71,21 @@ run_setup_commands_if_configured() {
 
         # migrate database
     if [ "$MIGRATE_ON_STARTUP" = "true" ]; then
-        echo "python /climweb/web/src/climweb/manage.py migrate"
-        /climweb/web/src/climweb/manage.py migrate --noinput
+        echo "python /climweb/climweb/src/climweb/manage.py migrate"
+        /climweb/climweb/src/climweb/manage.py migrate --noinput
     fi
 
         # collect staticfiles
     if [ "$COLLECT_STATICFILES_ON_STARTUP" = "true" ]; then
-        echo "python /climweb/web/src/climweb/manage.py collectstatic --clear --noinput"
-        /climweb/web/src/climweb/manage.py collectstatic --clear --noinput
+        echo "python /climweb/climweb/src/climweb/manage.py collectstatic --clear --noinput"
+        /climweb/climweb/src/climweb/manage.py collectstatic --clear --noinput
     fi
 
     # initialize geomanager
-    /climweb/web/src/climweb/manage.py initialize_geomanager
+    /climweb/climweb/src/climweb/manage.py initialize_geomanager
 
-    # reset cms upgrade status
-    /climweb/web/src/climweb/manage.py reset_cms_upgrade_status
+    # reset cms upgrade status (do not fail startup if cache/redis unavailable)
+    /climweb/climweb/src/climweb/manage.py reset_cms_upgrade_status || echo "Warning: reset_cms_upgrade_status failed; continuing"
 
     # watch for new files in the geomanager auto-ingest data dir
     if [ "$WATCH_GEOMANAGER_DATA_DIR" = "true" ]; then
@@ -95,7 +95,7 @@ run_setup_commands_if_configured() {
         EXT=${file##*.}
         if [ "$EXT" = "tif" ] || [ "$EXT" = "nc" ]; then
           echo "New Geomanager ingestion file detected: $file"
-          /climweb/web/src/climweb/manage.py ingest_geomanager_raster created "$file" --overwrite --clip
+          /climweb/climweb/src/climweb/manage.py ingest_geomanager_raster created "$file" --overwrite --clip
         fi
       done &
     fi
@@ -112,9 +112,6 @@ start_celery_worker() {
     exec celery -A climweb worker "${EXTRA_CELERY_ARGS[@]}" -l INFO "$@"
 }
 
-# Lets devs attach to this container running the passed command, press ctrl-c and only
-# the command will stop. Additionally they will be able to use bash history to
-# re-run the containers command after they have done what they want.
 attachable_exec(){
     echo "$@"
     exec bash --init-file <(echo "history -s $*; $*")
@@ -132,13 +129,12 @@ run_server() {
         exit 1
     fi
 
-    # Gunicorn args explained in order:
-    #
-    # 1. See https://docs.gunicorn.org/en/stable/faq.html#blocking-os-fchmod for
-    #    why we set worker-tmp-dir to /dev/shm by default.
-    # 2. Log to stdout
-    # 3. Log requests to stdout
-    exec gunicorn --workers="$GUNICORN_NUM_OF_WORKERS" \
+    WORKERS=${GUNICORN_NUM_OF_WORKERS:-2}
+    if [ -z "$WORKERS" ]; then
+        WORKERS=2
+    fi
+
+    exec gunicorn --workers="$WORKERS" \
         --worker-tmp-dir "${TMPDIR:-/dev/shm}" \
         --log-file=- \
         --access-logfile=- \
@@ -150,15 +146,11 @@ run_server() {
 }
 
 setup_otel_vars(){
-  # These key value pairs will be exported on every log/metric/trace by any otel
-  # exporters running in subprocesses launched by this script.
   EXTRA_OTEL_RESOURCE_ATTRIBUTES="service.namespace=ClimWeb,"
   EXTRA_OTEL_RESOURCE_ATTRIBUTES+="service.version=${CLIMWEB_APP_VERSION},"
   EXTRA_OTEL_RESOURCE_ATTRIBUTES+="deployment.environment=${CLIMWEB_DEPLOYMENT_ENV:-production}"
 
   if [[ -n "${OTEL_RESOURCE_ATTRIBUTES:-}" ]]; then
-    # If the container has been launched with some extra otel attributes, make sure not
-    # to override them with our ClimWeb specific ones.
     OTEL_RESOURCE_ATTRIBUTES="${EXTRA_OTEL_RESOURCE_ATTRIBUTES},${OTEL_RESOURCE_ATTRIBUTES}"
   else
     OTEL_RESOURCE_ATTRIBUTES="$EXTRA_OTEL_RESOURCE_ATTRIBUTES"
@@ -181,6 +173,13 @@ fi
 source /climweb/venv/bin/activate
 
 show_startup_banner
+
+# Ensure legacy `web/src/climweb` path exists for older deployments that expect
+# `/climweb/web/src/climweb/manage.py`. Create a symlink to the actual source
+# tree if needed so entrypoint commands remain compatible.
+if [ ! -d /climweb/web/src/climweb ] && [ -d /climweb/climweb/src/climweb ]; then
+    ln -s /climweb/climweb/src/climweb /climweb/web/src/climweb || true
+fi
 
 # wait for required services to be available, using docker-compose-wait
 /wait
@@ -238,12 +237,9 @@ celery-beat)
 install-plugin)
     exec /climweb/plugins/install_plugin.sh --runtime "${@:2}"
     ;;
-list-plugins)
-    exec /climweb/plugins/list_plugins.sh "${@:2}"
-    ;;
 *)
-    echo "Command given was $*"
+    echo "Unknown command $1"
     show_help
-    exit 1
+    exit 2
     ;;
 esac
