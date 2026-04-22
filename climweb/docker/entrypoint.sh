@@ -70,20 +70,22 @@ try:
     )
 
     if homepage:
-        runtime_port = int(os.environ.get('PORT', os.environ.get('CLIMWEB_PORT', '80')))
-        site, created = Site.objects.get_or_create(
+        # Railway assigns dynamic PORT; for HTTPS requests, Wagtail receives host without port.
+        # Configure Site with port 80/443 explicitly, or use 0 to match any port.
+        # Using port 80 as default since Railway's proxy handles SSL termination.
+        runtime_port = 80
+        
+        # Delete any existing site with this hostname to avoid port conflicts
+        Site.objects.filter(hostname=site_hostname).delete()
+        
+        site = Site.objects.create(
             hostname=site_hostname,
-            defaults=dict(
-                port=runtime_port,
-                root_page=homepage,
-                is_default_site=True,
-                site_name='AfriClimate Center For Adaptation',
-            ),
+            port=runtime_port,
+            root_page=homepage,
+            is_default_site=True,
+            site_name='AfriClimate Center For Adaptation',
         )
-        if created:
-            print(f"Site created: {site_hostname} -> {homepage.title} (id={homepage.id})")
-        else:
-            print(f"Site already exists: {site_hostname} -> {site.root_page} (id={site.id})")
+        print(f"Site created: {site_hostname}:{runtime_port} -> {homepage.title} (id={homepage.id})")
     else:
         print("WARNING: No suitable homepage found (no page with slug='home' or title containing 'AfriClimate').")
         print("WARNING: Wagtail site NOT configured — set it manually via the Wagtail admin (/cms/sites/).")
