@@ -79,6 +79,9 @@ run_setup_commands_if_configured() {
         /climweb/climweb/src/climweb/manage.py migrate --noinput
     fi
 
+    # configure wagtail site
+    /climweb/climweb/src/climweb/manage.py configure_site
+
         # collect staticfiles
     if [ "$COLLECT_STATICFILES_ON_STARTUP" = "true" ]; then
         echo "python /climweb/climweb/src/climweb/manage.py collectstatic --clear --noinput --verbosity=0"
