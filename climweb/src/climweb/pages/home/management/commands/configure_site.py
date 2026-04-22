@@ -44,11 +44,13 @@ class Command(BaseCommand):
             Site.objects.all().delete()
             self.stdout.write('Cleared all existing sites')
 
-            # Create the correct site
+            # Create the correct site using the runtime PORT (when provided by the
+            # platform) so Wagtail's site resolution matches the server port.
+            runtime_port = int(os.environ.get('PORT', os.environ.get('CLIMWEB_PORT', '80')))
             obj, created = Site.objects.update_or_create(
                 hostname=site_hostname,
                 defaults={
-                    'port': 80,
+                    'port': runtime_port,
                     'root_page': homepage,
                     'is_default_site': True,
                     'site_name': 'AfriClimate Center For Adaptation',

@@ -56,10 +56,11 @@ password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '')
 try:
     site_hostname = os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'climweb-production.up.railway.app')
 
-    # Remove any stale/conflicting default sites
-    Site.objects.filter(
-        hostname__in=['localhost', '127.0.0.1', '*', 'climweb-production.up.railway.app']
-    ).delete()
+    # Aggressive strategy: remove all existing Site objects so the configured
+    # site is the only one present. This avoids clashes with the default
+    # Wagtail welcome site and ensures host+port resolution matches runtime.
+    Site.objects.all().delete()
+    print('Cleared all existing Wagtail Site objects')
 
     # Homepage detection: slug='home' is most reliable, then title match.
     # NOTE: No depth=2 fallback — that catches the default Wagtail welcome page (id=2).
@@ -69,10 +70,11 @@ try:
     )
 
     if homepage:
+        runtime_port = int(os.environ.get('PORT', os.environ.get('CLIMWEB_PORT', '80')))
         site, created = Site.objects.get_or_create(
             hostname=site_hostname,
             defaults=dict(
-                port=80,
+                port=runtime_port,
                 root_page=homepage,
                 is_default_site=True,
                 site_name='AfriClimate Center For Adaptation',
