@@ -94,6 +94,71 @@ run_setup_commands_if_configured() {
     # reset cms upgrade status (do not fail startup if cache/redis unavailable)
     /climweb/climweb/src/climweb/manage.py reset_cms_upgrade_status || echo "Warning: reset_cms_upgrade_status failed; continuing"
 
+    # Configure Wagtail Site and optional superuser. Use runtime port so
+    # host+port resolution matches the server (important on Railway).
+    /climweb/venv/bin/python /climweb/climweb/src/climweb/manage.py shell <<'PYEOF' || echo "Warning: site configuration failed; continuing"
+import os, traceback
+from wagtail.models import Site, Page
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+try:
+    site_hostname = os.environ.get('RAILWAY_PUBLIC_DOMAIN', os.environ.get('CLIMWEB_PUBLIC_DOMAIN', 'climweb-production.up.railway.app'))
+
+    # Aggressive: remove any existing sites so we start with a clean slate
+    Site.objects.all().delete()
+
+    # Homepage detection: slug='home' first, then title match, then depth=2 fallback
+    homepage = (
+        Page.objects.filter(slug='home').first()
+        or Page.objects.filter(title__icontains='AfriClimate').first()
+        or Page.objects.filter(depth=2).first()
+    )
+
+    if homepage:
+        runtime_port = int(os.environ.get('PORT', os.environ.get('CLIMWEB_PORT', '80')))
+        site, created = Site.objects.update_or_create(
+            hostname=site_hostname,
+            defaults={
+                'port': runtime_port,
+                'root_page': homepage,
+                'is_default_site': True,
+                'site_name': 'AfriClimate Center For Adaptation',
+            },
+        )
+        if created:
+            print(f"Site created: {site_hostname} -> {homepage.title} (id={homepage.id})")
+        else:
+            print(f"Site updated: {site_hostname} -> {site.root_page} (id={site.id})")
+    else:
+        print("WARNING: No suitable homepage found (no page with slug='home' or title containing 'AfriClimate').")
+        print("WARNING: Wagtail site NOT configured — set it manually via the Wagtail admin (/cms/sites/).")
+        print("INFO: All pages currently in the database:")
+        for p in Page.objects.all().order_by('depth', 'id').values('id', 'slug', 'title', 'depth'):
+            print(f"  id={p['id']}  depth={p['depth']}  slug={p['slug']!r}  title={p['title']!r}")
+except Exception:
+    print("ERROR: Failed to configure Wagtail site:")
+    traceback.print_exc()
+
+# Superuser creation
+try:
+    username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
+    email = os.environ.get('DJANGO_SUPERUSER_EMAIL', '')
+    password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '')
+    if username:
+        if not User.objects.filter(username=username).exists():
+            User.objects.create_superuser(username=username, email=email, password=password)
+            print(f"Superuser created: {username}")
+        else:
+            print(f"Superuser already exists: {username}")
+    else:
+        print("DJANGO_SUPERUSER_USERNAME not set; skipping superuser creation")
+except Exception:
+    print("ERROR: Failed to create superuser:")
+    traceback.print_exc()
+PYEOF
+
     # watch for new files in the geomanager auto-ingest data dir
     if [ "$WATCH_GEOMANAGER_DATA_DIR" = "true" ]; then
       echo "GeoManager Listening for new files in $GEOMANAGER_AUTO_INGEST_RASTER_DATA_DIR"
