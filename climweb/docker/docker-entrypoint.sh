@@ -109,11 +109,11 @@ try:
     # Aggressive: remove any existing sites so we start with a clean slate
     Site.objects.all().delete()
 
-    # Homepage detection: slug='home' first, then title match, then depth=2 fallback
+    # Homepage detection: slug='home' first, then title match
+    # NOTE: Deliberately avoiding depth=2 fallback - that catches default Wagtail page!
     homepage = (
         Page.objects.filter(slug='home').first()
         or Page.objects.filter(title__icontains='AfriClimate').first()
-        or Page.objects.filter(depth=2).first()
     )
 
     if homepage:

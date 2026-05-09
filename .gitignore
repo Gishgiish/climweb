@@ -1,4 +1,4 @@
-```
+
 # Python
 __pycache__/
 *.pyc
@@ -8,38 +8,50 @@ __pycache__/
 env/
 venv/
 .venv/
-.venv-local/
-.venv-local-py3/
-.venv-py3/
-.env
-.env.local
-.env.*
+.ENV
+.python-version
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage/
 
-# Django/Wagtail
-*.pot
-*.mo
+# Django
 *.log
 local_settings.py
 db.sqlite3
-media/
-staticfiles/
-wagtail_site_fixture.json
+db.sqlite3-journal
 
-# Build and distribution
-dist/
+# Build artifacts
 build/
+dist/
+*.egg
 *.egg-info/
+.sass-cache/
+.well-known/
+coverage/
+
+# Environment specific
+.env
+.env.local
+.env.*
+!.env.example
 
 # Editors
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 
+# Docker
+.dockerenv
+!docker/
+```
+=======
 # Coverage
 .coverage
 htmlcov/
@@ -48,21 +60,7 @@ coverage/
 # Temporary files
 *.tmp
 *~
-```
 
-Wait, I need to reconsider. Looking at the actual changes, they appear to be legitimate source files and configuration files that should NOT be ignored:
-
-- `README_DEPLOYMENT_FIX.md` - documentation
-- `climweb/src/climweb/pages/home/management/commands/export_site_fixture.py` - source code
-- `climweb/src/climweb/pages/home/migrations/0031_create_default_homepage_site.py` - migration file (source code)
-- `climweb/wagtail_site_fixture.json` - fixture data (configuration)
-- `climweb/docker/entrypoint.sh` - script file (configuration)
-
-These are all source/config files, not build artifacts or temporary files. Following rule #6, since the changes contain only source/config files and no build artifacts, dependencies, or temp files, the output should be empty.
-
-```
-
-<<<<<<< HEAD
 # Compressed files
 *.zip
 *.gz
@@ -94,6 +92,3 @@ These are all source/config files, not build artifacts or temporary files. Follo
 
 *.conf
 *.dump
-=======
-```
->>>>>>> b450da27bb715ec5e32b8c9abe72fbf41ee1c7bc

@@ -31,6 +31,8 @@ def configure_site_for_deployment(apps, schema_editor):
     """
     Configure the Wagtail Site to use the HomePage as root.
     This runs during migration to ensure proper site configuration.
+    NOTE: Port is set to 80 as placeholder; entrypoint script updates it at runtime.
+    Using hostname='*' ensures it matches any hostname when port also matches.
     """
     HomePage = apps.get_model('home', 'HomePage')
     Site = apps.get_model('wagtailcore', 'Site')
@@ -42,17 +44,23 @@ def configure_site_for_deployment(apps, schema_editor):
         # Delete existing sites to avoid conflicts
         Site.objects.all().delete()
         
-        # Create new site - port will be updated at runtime by entrypoint script
+        # Create new site with hostname='*' and port=80 as placeholder
+        # IMPORTANT: The entrypoint script will update this at runtime with the correct PORT
+        # Using '*' as hostname ensures it matches any request when combined with correct port
         Site.objects.create(
             hostname='*',
-            port=80,
+            port=80,  # Placeholder - entrypoint will update via configure_site command
             root_page=homepage,
             is_default_site=True,
             site_name='AfriClimate Center For Adaptation',
         )
         print(f"Configured Site with homepage: {homepage.title} (id={homepage.id})")
+        print("NOTE: Entrypoint script will update port at runtime based on PORT env var")
     else:
         print("WARNING: No HomePage found, Site not configured")
+        print("INFO: Available pages:")
+        for p in Page.objects.all().order_by('depth', 'id')[:20]:
+            print(f"  id={p.id} depth={p.depth} slug={p.slug!r} title={p.title!r}")
 
 
 class Migration(migrations.Migration):
