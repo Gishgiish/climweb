@@ -1,66 +1,87 @@
-# Generated migration to ensure HomePage exists and Site is configured
 from django.db import migrations
-from wagtail.models import Page, Site
+from django.conf import settings
 
 
-def create_default_homepage_and_site(apps, schema_editor):
+def create_homepage_and_site(apps, schema_editor):
     """
-    Create a default HomePage if none exists, and configure the Wagtail Site.
-    This ensures that upon deployment, there's always a valid homepage to serve.
+    Create the HomePage and configure the default Wagtail Site.
+    This ensures fresh deployments have a proper homepage instead of
+    the default Wagtail welcome page.
     """
-    HomePage = apps.get_model('home', 'HomePage')
-    
-    # Check if a HomePage already exists
-    if not HomePage.objects.filter(depth__gt=1).exists():
-        # Get the root page
-        root_page = Page.objects.get(depth=1)
-        
-        # Create a default HomePage
-        home_page = HomePage(
-            title='Home',
-            slug='home',
-            hero_title='AfriClimate Center For Adaptation',
-            hero_subtitle='Climate Information for Africa',
-        )
-        root_page.add_child(instance=home_page)
-        home_page.save_revision().publish()
-        print(f"Created default HomePage: {home_page.title} (id={home_page.id})")
+    # Only run in production deployments
+    if not settings.DEBUG:
+        try:
+            # Get models
+            Page = apps.get_model('wagtailcore', 'Page')
+            Site = apps.get_model('wagtailcore', 'Site')
+
+            # Check if HomePage model exists (might not be loaded yet in migrations)
+            try:
+                HomePage = apps.get_model('home', 'HomePage')
+            except LookupError:
+                print("HomePage model not available yet, skipping homepage creation")
+                return
+
+            # Check if a homepage already exists
+            existing_home = HomePage.objects.first()
+            if existing_home:
+                print(f"HomePage already exists: {existing_home.title} (id={existing_home.id})")
+                return
+
+            # Get the root page (depth=1)
+            root_page = Page.objects.filter(depth=1).first()
+            if not root_page:
+                print("ERROR: No root page found!")
+                return
+
+            # Create the HomePage
+            home_page = HomePage(
+                title='Home',
+                slug='home',
+                hero_title='AfriClimate Center For Adaptation',
+                hero_subtitle='Building Climate Resilience in Africa',
+            )
+            root_page.add_child(instance=home_page)
+            home_page.save_revision().publish()
+            print(f"Created HomePage: {home_page.title} (id={home_page.id}, slug={home_page.slug})")
+
+            # Configure the Site
+            site_hostname = 'climweb-production.up.railway.app'
+
+            # Delete any existing sites
+            Site.objects.all().delete()
+
+            # Create the site pointing to our HomePage
+            site = Site.objects.create(
+                hostname=site_hostname,
+                port=80,  # Standard HTTP port for reverse proxy scenarios
+                root_page=home_page,
+                is_default_site=True,
+                site_name='AfriClimate Center For Adaptation',
+            )
+            print(f"Created Site: {site.hostname}:{site.port} -> {site.root_page.title}")
+
+        except Exception as e:
+            print(f"ERROR in create_homepage_and_site: {e}")
+            import traceback
+            traceback.print_exc()
 
 
-def configure_site_for_deployment(apps, schema_editor):
-    """
-    Configure the Wagtail Site to use the HomePage as root.
-    This runs during migration to ensure proper site configuration.
-    NOTE: Port is set to 80 as placeholder; entrypoint script updates it at runtime.
-    Using hostname='*' ensures it matches any hostname when port also matches.
-    """
-    HomePage = apps.get_model('home', 'HomePage')
-    Site = apps.get_model('wagtailcore', 'Site')
-    
-    # Find the HomePage
-    homepage = HomePage.objects.filter(depth__gt=1).first()
-    
-    if homepage:
-        # Delete existing sites to avoid conflicts
+def remove_homepage_and_site(apps, schema_editor):
+    """Reverse the migration."""
+    try:
+        Site = apps.get_model('wagtailcore', 'Site')
+        HomePage = apps.get_model('home', 'HomePage')
+
+        # Delete sites
         Site.objects.all().delete()
-        
-        # Create new site with hostname='*' and port=80 as placeholder
-        # IMPORTANT: The entrypoint script will update this at runtime with the correct PORT
-        # Using '*' as hostname ensures it matches any request when combined with correct port
-        Site.objects.create(
-            hostname='*',
-            port=80,  # Placeholder - entrypoint will update via configure_site command
-            root_page=homepage,
-            is_default_site=True,
-            site_name='AfriClimate Center For Adaptation',
-        )
-        print(f"Configured Site with homepage: {homepage.title} (id={homepage.id})")
-        print("NOTE: Entrypoint script will update port at runtime based on PORT env var")
-    else:
-        print("WARNING: No HomePage found, Site not configured")
-        print("INFO: Available pages:")
-        for p in Page.objects.all().order_by('depth', 'id')[:20]:
-            print(f"  id={p.id} depth={p.depth} slug={p.slug!r} title={p.title!r}")
+
+        # Delete homepage
+        HomePage.objects.all().delete()
+
+        print("Removed HomePage and Site configuration")
+    except Exception as e:
+        print(f"ERROR in remove_homepage_and_site: {e}")
 
 
 class Migration(migrations.Migration):
@@ -71,6 +92,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(create_default_homepage_and_site, reverse_code=migrations.RunPython.noop),
-        migrations.RunPython(configure_site_for_deployment, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(create_homepage_and_site, remove_homepage_and_site),
     ]
