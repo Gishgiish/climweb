@@ -30,10 +30,11 @@ class Command(BaseCommand):
             site_hostname = os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'climweb-production.up.railway.app')
             
             # Find the correct homepage first
+            # NOTE: We deliberately avoid depth=2 fallback as that often catches
+            # the default Wagtail welcome page. Only use explicit matching.
             homepage = (
                 Page.objects.filter(slug='home').first()
                 or Page.objects.filter(title__icontains='AfriClimate').first()
-                or Page.objects.filter(depth=2).first()
             )
 
             if not homepage:
