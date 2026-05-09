@@ -1,78 +1,94 @@
-# Byte-compiled / optimized / DLL files
+
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
-build/
-dist/
-*.egg-info/
-*.tar
-
-
-# Virtual environments
-venv/
-ENV/
-.venv/
+*.pyc
+*.pyo
+*.pyd
+.Python
 env/
-venv.bak/
-.env
-.env.backup
-
-# pip cache
-.cache/pip
-
-# pyenv
+venv/
+.venv/
+.ENV
 .python-version
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage/
 
-# Django stuff:
+# Django
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Media and uploaded files
-/media/
+# Build artifacts
+build/
+dist/
+*.egg
+*.egg-info/
+.sass-cache/
+.well-known/
+coverage/
 
-# Collected static files (do not ignore your source static files checked into repo)
-/staticfiles/
+# Environment specific
+.env
+.env.local
+.env.*
+!.env.example
 
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerenv
+!docker/
+```
+=======
 # Coverage
 .coverage
 htmlcov/
+coverage/
 
-# Pytest
-.pytest_cache/
+# Temporary files
+*.tmp
+*~
 
-# mypy
-.mypy_cache/
-
-# IDEs
-.vscode/
-.idea/
-
-# macOS
-.DS_Store
-
-# Logs
-logs/
-
-# Environment variables
-.env
-
-# Docker development overrides
-docker-compose.override.yml
-
-# Node
-node_modules/
-
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 
 *.sql
+*.sqlite
+*.bak
+*.backup
+
+*.conf
 *.dump
-*conf
-*.conf.backup
-climweb_db_backup.sql
-climweb_backup.sql
