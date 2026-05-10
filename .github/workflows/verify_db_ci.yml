@@ -1,0 +1,46 @@
+name: CI - Build image and verify DB
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  verify-db:
+    runs-on: ubuntu-latest
+    services:
+      postgis:
+        image: postgis/postgis:15-3.3
+        env:
+          POSTGRES_USER: climweb_ci
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: climweb_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd='pg_isready -U climweb_ci' --health-interval=5s --health-timeout=2s --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build production image
+        run: |
+          docker build -f Dockerfile.prod -t climweb:ci .
+
+      - name: Install psql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Wait for PostGIS service
+        env:
+          PGPASSWORD: pass
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U climweb_ci && break
+            echo "Waiting for PostGIS... ($i)"
+            sleep 2
+          done
+
+      - name: Run verify_db inside built image
+        run: |
+          docker run --rm --network host -e DATABASE_URL='postgresql://climweb_ci:pass@localhost:5432/climweb_ci' climweb:ci /climweb/venv/bin/python -m climweb.scripts.verify_db

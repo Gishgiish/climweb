@@ -36,6 +36,7 @@ DEBUG = env('DEBUG', False)
 # Application definition
 INSTALLED_APPS = [
     "climweb.base",
+    "climweb.config.apps.DbEngineConfig",
     
     "climweb.pages.home",
     "climweb.pages.services",

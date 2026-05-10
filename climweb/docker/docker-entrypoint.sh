@@ -18,9 +18,14 @@ GUNICORN_NUM_OF_WORKERS=${GUNICORN_NUM_OF_WORKERS:-}
 CLIMWEB_CELERY_BEAT_DEBUG_LEVEL=${CLIMWEB_CELERY_BEAT_DEBUG_LEVEL:-INFO}
 
 CLIMWEB_PORT="${CLIMWEB_PORT:-8000}"
+# If a platform provides a PORT (e.g. Railway), prefer it so the container
+# binds the port the platform expects.
+CLIMWEB_PORT="${PORT:-${CLIMWEB_PORT}}"
+export CLIMWEB_PORT
 
-# get the current version of the app
-CLIMWEB_APP_VERSION=$(PYTHONPATH=/climweb/web/src/climweb python -c "import version; print(version.__version__)")
+# get the current version of the app using the installed `climweb` package
+# use the venv python to ensure package paths are available
+CLIMWEB_APP_VERSION=$(/climweb/venv/bin/python -c "import climweb.version as v; print(v.__version__)")
 
 show_help() {
     echo """
@@ -50,8 +55,7 @@ django-dev      : Start a normal Climweb backend django development server, perf
 }
 
 show_startup_banner() {
-  # Use https://manytools.org/hacker-tools/ascii-banner/ and the font ANSI Shadow / Wide / Wide to generate
-cat <<EOF
+  cat <<EOF
 =========================================================================================
  ██████╗██╗     ██╗███╗   ███╗██╗    ██╗███████╗██████╗
 ██╔════╝██║     ██║████╗ ████║██║    ██║██╔════╝██╔══██╗
@@ -71,21 +75,89 @@ run_setup_commands_if_configured() {
 
         # migrate database
     if [ "$MIGRATE_ON_STARTUP" = "true" ]; then
-        echo "python /climweb/web/src/climweb/manage.py migrate"
-        /climweb/web/src/climweb/manage.py migrate --noinput
+        echo "python /climweb/climweb/src/climweb/manage.py migrate"
+        /climweb/climweb/src/climweb/manage.py migrate --noinput
     fi
+
+    # configure wagtail site
+    /climweb/climweb/src/climweb/manage.py configure_site
 
         # collect staticfiles
     if [ "$COLLECT_STATICFILES_ON_STARTUP" = "true" ]; then
-        echo "python /climweb/web/src/climweb/manage.py collectstatic --clear --noinput"
-        /climweb/web/src/climweb/manage.py collectstatic --clear --noinput
+        echo "python /climweb/climweb/src/climweb/manage.py collectstatic --clear --noinput --verbosity=0"
+        /climweb/climweb/src/climweb/manage.py collectstatic --clear --noinput --verbosity=0
     fi
 
     # initialize geomanager
-    /climweb/web/src/climweb/manage.py initialize_geomanager
+    /climweb/climweb/src/climweb/manage.py initialize_geomanager
 
-    # reset cms upgrade status
-    /climweb/web/src/climweb/manage.py reset_cms_upgrade_status
+    # reset cms upgrade status (do not fail startup if cache/redis unavailable)
+    /climweb/climweb/src/climweb/manage.py reset_cms_upgrade_status || echo "Warning: reset_cms_upgrade_status failed; continuing"
+
+    # Configure Wagtail Site and optional superuser. Use runtime port so
+    # host+port resolution matches the server (important on Railway).
+    /climweb/venv/bin/python /climweb/climweb/src/climweb/manage.py shell <<'PYEOF' || echo "Warning: site configuration failed; continuing"
+import os, traceback
+from wagtail.models import Site, Page
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+try:
+    site_hostname = os.environ.get('RAILWAY_PUBLIC_DOMAIN', os.environ.get('CLIMWEB_PUBLIC_DOMAIN', 'climweb-production.up.railway.app'))
+
+    # Aggressive: remove any existing sites so we start with a clean slate
+    Site.objects.all().delete()
+
+    # Homepage detection: slug='home' first, then title match
+    # NOTE: Deliberately avoiding depth=2 fallback - that catches default Wagtail page!
+    homepage = (
+        Page.objects.filter(slug='home').first()
+        or Page.objects.filter(title__icontains='AfriClimate').first()
+    )
+
+    if homepage:
+        runtime_port = int(os.environ.get('PORT', os.environ.get('CLIMWEB_PORT', '80')))
+        site, created = Site.objects.update_or_create(
+            hostname=site_hostname,
+            defaults={
+                'port': runtime_port,
+                'root_page': homepage,
+                'is_default_site': True,
+                'site_name': 'AfriClimate Center For Adaptation',
+            },
+        )
+        if created:
+            print(f"Site created: {site_hostname} -> {homepage.title} (id={homepage.id})")
+        else:
+            print(f"Site updated: {site_hostname} -> {site.root_page} (id={site.id})")
+    else:
+        print("WARNING: No suitable homepage found (no page with slug='home' or title containing 'AfriClimate').")
+        print("WARNING: Wagtail site NOT configured — set it manually via the Wagtail admin (/cms/sites/).")
+        print("INFO: All pages currently in the database:")
+        for p in Page.objects.all().order_by('depth', 'id').values('id', 'slug', 'title', 'depth'):
+            print(f"  id={p['id']}  depth={p['depth']}  slug={p['slug']!r}  title={p['title']!r}")
+except Exception:
+    print("ERROR: Failed to configure Wagtail site:")
+    traceback.print_exc()
+
+# Superuser creation
+try:
+    username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
+    email = os.environ.get('DJANGO_SUPERUSER_EMAIL', '')
+    password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '')
+    if username:
+        if not User.objects.filter(username=username).exists():
+            User.objects.create_superuser(username=username, email=email, password=password)
+            print(f"Superuser created: {username}")
+        else:
+            print(f"Superuser already exists: {username}")
+    else:
+        print("DJANGO_SUPERUSER_USERNAME not set; skipping superuser creation")
+except Exception:
+    print("ERROR: Failed to create superuser:")
+    traceback.print_exc()
+PYEOF
 
     # watch for new files in the geomanager auto-ingest data dir
     if [ "$WATCH_GEOMANAGER_DATA_DIR" = "true" ]; then
@@ -95,7 +167,7 @@ run_setup_commands_if_configured() {
         EXT=${file##*.}
         if [ "$EXT" = "tif" ] || [ "$EXT" = "nc" ]; then
           echo "New Geomanager ingestion file detected: $file"
-          /climweb/web/src/climweb/manage.py ingest_geomanager_raster created "$file" --overwrite --clip
+          /climweb/climweb/src/climweb/manage.py ingest_geomanager_raster created "$file" --overwrite --clip
         fi
       done &
     fi
@@ -112,9 +184,6 @@ start_celery_worker() {
     exec celery -A climweb worker "${EXTRA_CELERY_ARGS[@]}" -l INFO "$@"
 }
 
-# Lets devs attach to this container running the passed command, press ctrl-c and only
-# the command will stop. Additionally they will be able to use bash history to
-# re-run the containers command after they have done what they want.
 attachable_exec(){
     echo "$@"
     exec bash --init-file <(echo "history -s $*; $*")
@@ -132,13 +201,12 @@ run_server() {
         exit 1
     fi
 
-    # Gunicorn args explained in order:
-    #
-    # 1. See https://docs.gunicorn.org/en/stable/faq.html#blocking-os-fchmod for
-    #    why we set worker-tmp-dir to /dev/shm by default.
-    # 2. Log to stdout
-    # 3. Log requests to stdout
-    exec gunicorn --workers="$GUNICORN_NUM_OF_WORKERS" \
+    WORKERS=${GUNICORN_NUM_OF_WORKERS:-2}
+    if [ -z "$WORKERS" ]; then
+        WORKERS=2
+    fi
+
+    exec gunicorn --workers="$WORKERS" \
         --worker-tmp-dir "${TMPDIR:-/dev/shm}" \
         --log-file=- \
         --access-logfile=- \
@@ -150,15 +218,11 @@ run_server() {
 }
 
 setup_otel_vars(){
-  # These key value pairs will be exported on every log/metric/trace by any otel
-  # exporters running in subprocesses launched by this script.
   EXTRA_OTEL_RESOURCE_ATTRIBUTES="service.namespace=ClimWeb,"
   EXTRA_OTEL_RESOURCE_ATTRIBUTES+="service.version=${CLIMWEB_APP_VERSION},"
   EXTRA_OTEL_RESOURCE_ATTRIBUTES+="deployment.environment=${CLIMWEB_DEPLOYMENT_ENV:-production}"
 
   if [[ -n "${OTEL_RESOURCE_ATTRIBUTES:-}" ]]; then
-    # If the container has been launched with some extra otel attributes, make sure not
-    # to override them with our ClimWeb specific ones.
     OTEL_RESOURCE_ATTRIBUTES="${EXTRA_OTEL_RESOURCE_ATTRIBUTES},${OTEL_RESOURCE_ATTRIBUTES}"
   else
     OTEL_RESOURCE_ATTRIBUTES="$EXTRA_OTEL_RESOURCE_ATTRIBUTES"
@@ -172,15 +236,28 @@ setup_otel_vars(){
 # ======================================================
 
 if [[ -z "${1:-}" ]]; then
-    echo "Must provide arguments to docker-entrypoint.sh"
-    show_help
-    exit 1
+    # Default to gunicorn in production containers to ensure the service
+    # always starts when no explicit command is provided.
+    if [[ "${DJANGO_SETTINGS_MODULE:-}" == *"prod"* ]] || [[ "${CLIMWEB_DEPLOYMENT_ENV:-}" == "production" ]]; then
+        set -- gunicorn
+    else
+        echo "Must provide arguments to docker-entrypoint.sh"
+        show_help
+        exit 1
+    fi
 fi
 
 # activate virtualenv
 source /climweb/venv/bin/activate
 
 show_startup_banner
+
+# Ensure legacy `web/src/climweb` path exists for older deployments that expect
+# `/climweb/web/src/climweb/manage.py`. Create a symlink to the actual source
+# tree if needed so entrypoint commands remain compatible.
+if [ ! -d /climweb/web/src/climweb ] && [ -d /climweb/climweb/src/climweb ]; then
+    ln -s /climweb/climweb/src/climweb /climweb/web/src/climweb || true
+fi
 
 # wait for required services to be available, using docker-compose-wait
 /wait
@@ -191,6 +268,14 @@ source /climweb/plugins/utils.sh
 setup_otel_vars
 
 echo "Inspecting Django DB engine and DATABASE_URL (sanitized)..."
+# Ensure LD_LIBRARY_PATH includes common system library directory used by GDAL
+export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}
+echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+
+# Print GDAL version for debugging early in startup
+python -c "from osgeo import gdal; print('GDAL version:', getattr(gdal, '__version__', 'unknown'))" || echo "Warning: unable to import GDAL to print version"
+
+# Run verify script (this will call django.setup() before DB checks)
 python -m climweb.scripts.verify_db || {
     echo "verify_db failed; aborting startup"
     exit 2
@@ -238,12 +323,9 @@ celery-beat)
 install-plugin)
     exec /climweb/plugins/install_plugin.sh --runtime "${@:2}"
     ;;
-list-plugins)
-    exec /climweb/plugins/list_plugins.sh "${@:2}"
-    ;;
 *)
-    echo "Command given was $*"
+    echo "Unknown command $1"
     show_help
-    exit 1
+    exit 2
     ;;
 esac

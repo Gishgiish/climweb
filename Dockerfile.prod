@@ -1,11 +1,12 @@
 # syntax = docker/dockerfile:1.5
 
 FROM ghcr.io/osgeo/gdal:ubuntu-full-3.7.0 as base
-
 ARG UID
 ENV UID=${UID:-1001}
 ARG GID
 ENV GID=${GID:-1001}
+ARG POSTGRES_VERSION=15
+ENV POSTGRES_VERSION=${POSTGRES_VERSION}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -33,9 +34,11 @@ RUN apt-get update && \
         cron \
         tini \
         gosu \
+        gdal-bin \
         inotify-tools \
         libffi-dev \
         libpq-dev \
+        libgdal-dev \
         libgeos-dev \
         imagemagick \
         libmagic1 \
@@ -45,6 +48,7 @@ RUN apt-get update && \
         python3-dev \
         python3-venv \
         poppler-utils \
+        pip install GDAL==$(gdal-config --version) \
         git \
     && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && curl --silent https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
@@ -103,6 +107,22 @@ ENV GEOMANAGER_AUTO_INGEST_RASTER_DATA_DIR=/climweb/geomanager/data
 RUN chmod a+x /climweb/climweb/docker/docker-entrypoint.sh && \
     /climweb/venv/bin/pip install --no-cache-dir -e /climweb/climweb/
 
+# Pre-generate matplotlib font cache (fontlist-v330.json) if matplotlib is available.
+# This reduces runtime first-start delays and avoids font-cache warnings.
+RUN /climweb/venv/bin/python - <<'PY' || true
+import importlib, sys
+spec = importlib.util.find_spec('matplotlib')
+if spec:
+    try:
+        from matplotlib import font_manager
+        font_manager._rebuild()
+        print('matplotlib fontlist rebuilt')
+    except Exception as e:
+        print('failed to rebuild matplotlib fontlist:', e, file=sys.stderr)
+else:
+    print('matplotlib not installed; skipping fontlist rebuild')
+PY
+
 ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/climweb/climweb/docker/docker-entrypoint.sh"]
 
 # Ensure venv is first on PATH at container runtime
@@ -111,7 +131,7 @@ ENV PATH="/climweb/venv/bin:$PATH"
 ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.production'
 
 HEALTHCHECK --interval=1m --timeout=10s --start-period=30s --retries=3 \
-    CMD python -m climweb.scripts.verify_db >/dev/null 2>&1 || exit 1
+    CMD /climweb/venv/bin/python -m climweb.scripts.verify_db >/dev/null 2>&1 || exit 1
 
 CMD ["gunicorn", "climweb.config.wsgi:application", "--bind", "0.0.0.0:8000", "--log-file", "-"]
 

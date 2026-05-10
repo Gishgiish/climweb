@@ -31,11 +31,19 @@ done
 echo "Collecting static files..."
 cd /app/climweb/src/climweb && python manage.py collectstatic --noinput
 
-echo "Loading production fixture if present..."
+echo "Loading production fixtures if present..."
+# Load user accounts first
 if [ -f /app/climweb/wagtail_prod_sync.json ]; then
     cd /app/climweb/src/climweb && python manage.py loaddata /app/climweb/wagtail_prod_sync.json || true
 else
-    echo "No fixture file found at /app/climweb/wagtail_prod_sync.json, skipping."
+    echo "No user fixture found at /app/climweb/wagtail_prod_sync.json, skipping."
+fi
+
+# Load site configuration if available (generated from production)
+if [ -f /app/climweb/wagtail_site_fixture.json ]; then
+    cd /app/climweb/src/climweb && python manage.py loaddata /app/climweb/wagtail_site_fixture.json || true
+else
+    echo "No site fixture found at /app/climweb/wagtail_site_fixture.json, will configure dynamically."
 fi
 
 echo "Configuring Wagtail site and superuser..."
@@ -56,10 +64,11 @@ password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '')
 try:
     site_hostname = os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'climweb-production.up.railway.app')
 
-    # Remove any stale/conflicting default sites
-    Site.objects.filter(
-        hostname__in=['localhost', '127.0.0.1', '*', 'climweb-production.up.railway.app']
-    ).delete()
+    # Aggressive strategy: remove all existing Site objects so the configured
+    # site is the only one present. This avoids clashes with the default
+    # Wagtail welcome site and ensures host+port resolution matches runtime.
+    Site.objects.all().delete()
+    print('Cleared all existing Wagtail Site objects')
 
     # Homepage detection: slug='home' is most reliable, then title match.
     # NOTE: No depth=2 fallback — that catches the default Wagtail welcome page (id=2).
@@ -69,19 +78,26 @@ try:
     )
 
     if homepage:
-        site, created = Site.objects.get_or_create(
+        # Railway assigns dynamic PORT; for HTTPS requests, Wagtail receives host without port.
+        # Configure Site with port 80/443 explicitly, or use 0 to match any port.
+        # Using port 80 as default since Railway's proxy handles SSL termination.
+        runtime_port_env = os.environ.get('PORT', '80')
+        try:
+            runtime_port = int(runtime_port_env)
+        except (ValueError, TypeError):
+            runtime_port = 80
+        
+        # Delete any existing site with this hostname to avoid port conflicts
+        Site.objects.filter(hostname=site_hostname).delete()
+        
+        site = Site.objects.create(
             hostname=site_hostname,
-            defaults=dict(
-                port=80,
-                root_page=homepage,
-                is_default_site=True,
-                site_name='AfriClimate Center For Adaptation',
-            ),
+            port=runtime_port,
+            root_page=homepage,
+            is_default_site=True,
+            site_name='AfriClimate Center For Adaptation',
         )
-        if created:
-            print(f"Site created: {site_hostname} -> {homepage.title} (id={homepage.id})")
-        else:
-            print(f"Site already exists: {site_hostname} -> {site.root_page} (id={site.id})")
+        print(f"Site created: {site_hostname}:{runtime_port} -> {homepage.title} (id={homepage.id})")
     else:
         print("WARNING: No suitable homepage found (no page with slug='home' or title containing 'AfriClimate').")
         print("WARNING: Wagtail site NOT configured — set it manually via the Wagtail admin (/cms/sites/).")
