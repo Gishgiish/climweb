@@ -1,5 +1,6 @@
 from django.db import migrations
 from django.conf import settings
+import os
 
 
 def create_homepage_and_site(apps, schema_editor):
@@ -46,8 +47,11 @@ def create_homepage_and_site(apps, schema_editor):
             home_page.save_revision().publish()
             print(f"Created HomePage: {home_page.title} (id={home_page.id}, slug={home_page.slug})")
 
-            # Configure the Site
-            site_hostname = 'climweb-production.up.railway.app'
+            # Configure the Site - use dynamic domain from environment or fallback
+            site_hostname = os.environ.get(
+                'RAILWAY_PUBLIC_DOMAIN',
+                os.environ.get('CLIMWEB_PUBLIC_DOMAIN', 'climweb-production.up.railway.app')
+            )
 
             # Delete any existing sites
             Site.objects.all().delete()
