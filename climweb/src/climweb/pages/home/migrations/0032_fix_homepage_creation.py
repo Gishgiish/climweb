@@ -101,12 +101,9 @@ def fix_homepage_and_site(apps, schema_editor):
             hero_title='AfriClimate Center For Adaptation',
             hero_subtitle='Building Climate Resilience in Africa',
         )
-        # Use treebeard's add_child() to properly set depth, path, numchild.
-        # Calling .save() directly bypasses treebeard and leaves these fields null,
-        # causing a NOT NULL constraint violation on the 'depth' column.
-        root_page.add_child(instance=home_page)
-        # Refresh from DB to get the treebeard-assigned field values.
-        home_page.refresh_from_db()
+        home_page.parent_page = root_page
+        home_page.save()
+        home_page.save_revision().publish()
         print(
             f"Created HomePage: \"{home_page.title}\" "
             f"(id={home_page.id}, slug={home_page.slug!r})"
