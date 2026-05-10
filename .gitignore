@@ -74,4 +74,12 @@ Thumbs.db
 htmlcov/
 .coverage
 coverage.xml
-```
+
+
+*.dump
+*.conf
+*.conf.backup
+
+*.sql
+.tar
+*.tar
