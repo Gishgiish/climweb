@@ -8,6 +8,8 @@ __pycache__/
 env/
 venv/
 .venv/
+.ENV
+.venv.bak/
 pip-log.txt
 pip-delete-this-directory.txt
 .tox/
@@ -21,13 +23,7 @@ coverage.xml
 *.pot
 *.pyc
 *.pyo
-*.pyd
-*.so
-.TemporaryItems
-.deps
 .pytest_cache/
-.mypy_cache/
-.hypothesis/
 
 # Django
 *.log
@@ -38,24 +34,7 @@ media/
 staticfiles/
 .env
 
-# Build and distribution
-dist/
-build/
-develop-eggs/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# IDE and editor
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -64,14 +43,8 @@ wheels/
 .DS_Store
 Thumbs.db
 
-# Environment variables
-.env
-.env.local
-.env.*
-
-# Coverage
-.coverage*
-htmlcov/
-.coverage
-coverage.xml
+# Build and distribution artifacts  
+dist/
+build/
+*.egg-info/
 ```
