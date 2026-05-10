@@ -67,6 +67,19 @@ except NameError:
     # Fall back to the standard PostGIS backend if DB_ENGINE is not present
     DB_ENGINE = "django.contrib.gis.db.backends.postgis"
 
+# Emergency override: allow ops teams to force a known PostGIS engine via env var.
+# - `DB_ENGINE_OVERRIDE` if set will be used verbatim (useful for testing)
+# - `FORCE_DB_ENGINE_TO_POSTGIS=true` will set the engine to Django's PostGIS backend
+db_engine_override = os.environ.get('DB_ENGINE_OVERRIDE')
+if db_engine_override:
+    DB_ENGINE = db_engine_override
+else:
+    if os.environ.get('FORCE_DB_ENGINE_TO_POSTGIS', '').lower() in ('1', 'true', 'yes'):
+        DB_ENGINE = 'django.contrib.gis.db.backends.postgis'
+
+# Hard-set the engine to avoid accidental fallback to a plain postgresql backend
+db_config['ENGINE'] = DB_ENGINE
+
 # EXPLICITLY force sslmode to disable to override any URL params or defaults
 db_config.setdefault('OPTIONS', {})
 db_config['OPTIONS']['sslmode'] = 'disable'
