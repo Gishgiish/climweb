@@ -113,12 +113,11 @@ def force_fix_homepage_creation(apps, schema_editor):
         home_page = HomePage(
             title='Home',
             slug='home',
+            live=True,
             hero_title='AfriClimate Center For Adaptation',
             hero_subtitle='Building Climate Resilience in Africa',
         )
-        home_page.parent_page = root_page
-        home_page.save()
-        home_page.save_revision().publish()
+        root_page.add_child(instance=home_page)
         print(
             f"[0033] Created HomePage: \"{home_page.title}\" "
             f"(id={home_page.id}, slug={home_page.slug!r})."
