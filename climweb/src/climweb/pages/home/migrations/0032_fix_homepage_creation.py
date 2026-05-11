@@ -101,8 +101,13 @@ def fix_homepage_and_site(apps, schema_editor):
             live=True,
             hero_title='AfriClimate Center For Adaptation',
             hero_subtitle='Building Climate Resilience in Africa',
+            depth=root_page.depth + 1,
+            path=root_page.path + '0001',
+            numchild=0,
         )
-        root_page.add_child(instance=home_page)
+        home_page.save()
+        root_page.numchild = (root_page.numchild or 0) + 1
+        root_page.save(update_fields=['numchild'])
         print(
             f"Created HomePage: \"{home_page.title}\" "
             f"(id={home_page.id}, slug={home_page.slug!r})"
