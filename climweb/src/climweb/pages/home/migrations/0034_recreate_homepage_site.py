@@ -1,7 +1,7 @@
 import os
 import traceback
 
-from django.db import migrations
+from django.db import migrations, transaction
 
 
 def recreate_homepage_and_site(apps, schema_editor):
@@ -65,6 +65,11 @@ def recreate_homepage_and_site(apps, schema_editor):
             print("[0034] ERROR: No root page at depth=1.")
             return
 
+        # Look up the ContentType for HomePage — required NOT NULL field on wagtailcore_page.
+        # Historical models in migrations don't have Wagtail's custom save() that auto-assigns this.
+        ContentType = apps.get_model('contenttypes', 'ContentType')
+        homepage_ct = ContentType.objects.get(app_label='home', model='homepage')
+
         home_page = HomePage(
             title='Home',
             slug='home',
@@ -74,6 +79,7 @@ def recreate_homepage_and_site(apps, schema_editor):
             depth=root_page.depth + 1,
             path=root_page.path + '0001',
             numchild=0,
+            content_type=homepage_ct,
         )
         home_page.save()
         root_page.numchild = (root_page.numchild or 0) + 1
