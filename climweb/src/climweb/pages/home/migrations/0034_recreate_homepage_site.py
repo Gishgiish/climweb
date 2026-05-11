@@ -70,6 +70,13 @@ def recreate_homepage_and_site(apps, schema_editor):
         ContentType = apps.get_model('contenttypes', 'ContentType')
         homepage_ct = ContentType.objects.get(app_label='home', model='homepage')
 
+        # Look up the default Locale — also a required NOT NULL field on wagtailcore_page.
+        Locale = apps.get_model('wagtailcore', 'Locale')
+        default_locale = Locale.objects.first()
+        if default_locale is None:
+            # Wagtail always creates a default locale (usually "en"), but handle edge case.
+            default_locale = Locale.objects.create(language_code='en')
+
         home_page = HomePage(
             title='Home',
             slug='home',
@@ -80,6 +87,7 @@ def recreate_homepage_and_site(apps, schema_editor):
             path=root_page.path + '0001',
             numchild=0,
             content_type=homepage_ct,
+            locale=default_locale,
         )
         home_page.save()
         root_page.numchild = (root_page.numchild or 0) + 1
