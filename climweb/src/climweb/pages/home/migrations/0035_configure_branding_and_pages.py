@@ -221,6 +221,97 @@ def _create_contact_page(apps, schema_editor):
 
 
 # ---------------------------------------------------------------------------
+# Step 4 – Create essential index pages under HomePage
+# ---------------------------------------------------------------------------
+
+# Each entry: (import_path, title, slug)
+# import_path is "module.ClassName" where module is the Python dotted path
+# to the models module (relative to the project root).
+_ESSENTIAL_PAGES = [
+    ('climweb.pages.news.models.NewsIndexPage',                                    'News & Updates',  'news'),
+    ('climweb.pages.publications.models.PublicationsIndexPage',                    'Publications',    'publications'),
+    ('climweb.pages.events.models.EventIndexPage',                                 'Events',          'events'),
+    ('climweb.pages.services.models.ServiceIndexPage',                             'Services',        'services'),
+    ('climweb.pages.organisation_pages.organisation.models.OrganisationIndexPage', 'Organisations',   'organisations'),
+    ('climweb.pages.mediacenter.models.MediaIndexPage',                            'Media Center',    'media'),
+    ('climweb.pages.glossary.models.GlossaryIndexPage',                            'Glossary',        'glossary'),
+    ('capcomposer.cap.models.CapAlertListPage',                                    'Weather Alerts',  'alerts'),
+    ('climweb.pages.flex_page.models.FlexPage',                                    'About Us',        'about'),
+]
+
+
+def _import_page_model(dotted_path):
+    """
+    Import a page model class from a dotted path like
+    'climweb.pages.news.models.NewsIndexPage'.
+    Returns the class or None if the module/class cannot be imported.
+    """
+    try:
+        module_path, class_name = dotted_path.rsplit('.', 1)
+        import importlib
+        module = importlib.import_module(module_path)
+        return getattr(module, class_name)
+    except (ImportError, AttributeError, ModuleNotFoundError):
+        return None
+
+
+def _create_essential_pages(apps, schema_editor):
+    try:
+        from climweb.pages.home.models import HomePage
+
+        home_page = HomePage.objects.live().first()
+        if home_page is None:
+            print("  [0035] No live HomePage found — skipping essential pages creation.")
+            return
+
+        for dotted_path, title, slug in _ESSENTIAL_PAGES:
+            try:
+                PageModel = _import_page_model(dotted_path)
+                if PageModel is None:
+                    print(
+                        f"  [0035] Could not import {dotted_path!r} — skipping."
+                    )
+                    continue
+
+                # Skip if a page of this type already exists anywhere in the tree
+                if PageModel.objects.exists():
+                    existing = PageModel.objects.first()
+                    print(
+                        f"  [0035] {PageModel.__name__} already exists: "
+                        f"\"{existing.title}\" (id={existing.pk}, slug={existing.slug!r}) — skipping."
+                    )
+                    continue
+
+                # Also skip if a child with the same slug already exists under HomePage
+                if home_page.get_children().filter(slug=slug).exists():
+                    print(
+                        f"  [0035] A child page with slug={slug!r} already exists "
+                        f"under HomePage — skipping {PageModel.__name__}."
+                    )
+                    continue
+
+                page = PageModel(
+                    title=title,
+                    slug=slug,
+                    live=True,
+                    show_in_menus=True,
+                )
+                home_page.add_child(instance=page)
+                print(
+                    f"  [0035] Created {PageModel.__name__}: \"{page.title}\" "
+                    f"(id={page.pk}, slug={page.slug!r}) under HomePage (id={home_page.pk})."
+                )
+
+            except Exception as exc:
+                print(f"  [0035] ERROR creating page for {dotted_path!r}: {exc}")
+                traceback.print_exc()
+
+    except Exception as exc:
+        print(f"  [0035] ERROR in _create_essential_pages: {exc}")
+        traceback.print_exc()
+
+
+# ---------------------------------------------------------------------------
 # Top-level migration function
 # ---------------------------------------------------------------------------
 
@@ -229,6 +320,7 @@ def configure_branding_and_pages(apps, schema_editor):
     _assign_logo(apps, schema_editor)
     _assign_hero_banner(apps, schema_editor)
     _create_contact_page(apps, schema_editor)
+    _create_essential_pages(apps, schema_editor)
     print("[0035] configure_branding_and_pages — done")
 
 
