@@ -224,34 +224,34 @@ def _create_contact_page(apps, schema_editor):
 # Step 4 – Create essential index pages under HomePage
 # ---------------------------------------------------------------------------
 
-# Each entry: (import_path, title, slug)
-# import_path is "module.ClassName" where module is the Python dotted path
-# to the models module (relative to the project root).
+# Each entry: (app_label, model_name, title, slug)
+# app_label is the Django app label (last segment of the app name, or the
+# label attribute defined in AppConfig).
 _ESSENTIAL_PAGES = [
-    ('climweb.pages.news.models.NewsIndexPage',                                    'News & Updates',  'news'),
-    ('climweb.pages.publications.models.PublicationsIndexPage',                    'Publications',    'publications'),
-    ('climweb.pages.events.models.EventIndexPage',                                 'Events',          'events'),
-    ('climweb.pages.services.models.ServiceIndexPage',                             'Services',        'services'),
-    ('climweb.pages.organisation_pages.organisation.models.OrganisationIndexPage', 'Organisations',   'organisations'),
-    ('climweb.pages.mediacenter.models.MediaIndexPage',                            'Media Center',    'media'),
-    ('climweb.pages.glossary.models.GlossaryIndexPage',                            'Glossary',        'glossary'),
-    ('capcomposer.cap.models.CapAlertListPage',                                    'Weather Alerts',  'alerts'),
-    ('climweb.pages.flex_page.models.FlexPage',                                    'About Us',        'about'),
+    ('news',         'NewsIndexPage',         'News & Updates', 'news'),
+    ('publications', 'PublicationsIndexPage', 'Publications',   'publications'),
+    ('events',       'EventIndexPage',        'Events',         'events'),
+    ('services',     'ServiceIndexPage',      'Services',       'services'),
+    ('organisation', 'OrganisationIndexPage', 'Organisations',  'organisations'),
+    ('mediacenter',  'MediaIndexPage',        'Media Center',   'media'),
+    ('glossary',     'GlossaryIndexPage',     'Glossary',       'glossary'),
+    ('cap',          'CapAlertListPage',      'Weather Alerts', 'alerts'),
+    ('flex_page',    'FlexPage',              'About Us',       'about'),
 ]
 
 
-def _import_page_model(dotted_path):
+def _get_page_model(apps, app_label, model_name):
     """
-    Import a page model class from a dotted path like
-    'climweb.pages.news.models.NewsIndexPage'.
-    Returns the class or None if the module/class cannot be imported.
+    Retrieve a page model class from the Django apps registry.
+    Returns the class or None if the app/model is not registered.
+
+    Using apps.get_model() avoids direct module imports, which can fail
+    when a model's module has unavailable dependencies (e.g. GDAL/osgeo)
+    at migration time.
     """
     try:
-        module_path, class_name = dotted_path.rsplit('.', 1)
-        import importlib
-        module = importlib.import_module(module_path)
-        return getattr(module, class_name)
-    except (ImportError, AttributeError, ModuleNotFoundError):
+        return apps.get_model(app_label, model_name)
+    except LookupError:
         return None
 
 
@@ -264,12 +264,12 @@ def _create_essential_pages(apps, schema_editor):
             print("  [0035] No live HomePage found — skipping essential pages creation.")
             return
 
-        for dotted_path, title, slug in _ESSENTIAL_PAGES:
+        for app_label, model_name, title, slug in _ESSENTIAL_PAGES:
             try:
-                PageModel = _import_page_model(dotted_path)
+                PageModel = _get_page_model(apps, app_label, model_name)
                 if PageModel is None:
                     print(
-                        f"  [0035] Could not import {dotted_path!r} — skipping."
+                        f"  [0035] Could not find {app_label}.{model_name} in apps registry — skipping."
                     )
                     continue
 
@@ -277,7 +277,7 @@ def _create_essential_pages(apps, schema_editor):
                 if PageModel.objects.exists():
                     existing = PageModel.objects.first()
                     print(
-                        f"  [0035] {PageModel.__name__} already exists: "
+                        f"  [0035] {model_name} already exists: "
                         f"\"{existing.title}\" (id={existing.pk}, slug={existing.slug!r}) — skipping."
                     )
                     continue
@@ -286,7 +286,7 @@ def _create_essential_pages(apps, schema_editor):
                 if home_page.get_children().filter(slug=slug).exists():
                     print(
                         f"  [0035] A child page with slug={slug!r} already exists "
-                        f"under HomePage — skipping {PageModel.__name__}."
+                        f"under HomePage — skipping {model_name}."
                     )
                     continue
 
@@ -298,12 +298,12 @@ def _create_essential_pages(apps, schema_editor):
                 )
                 home_page.add_child(instance=page)
                 print(
-                    f"  [0035] Created {PageModel.__name__}: \"{page.title}\" "
+                    f"  [0035] Created {model_name}: \"{page.title}\" "
                     f"(id={page.pk}, slug={page.slug!r}) under HomePage (id={home_page.pk})."
                 )
 
             except Exception as exc:
-                print(f"  [0035] ERROR creating page for {dotted_path!r}: {exc}")
+                print(f"  [0035] ERROR creating page for {app_label}.{model_name!r}: {exc}")
                 traceback.print_exc()
 
     except Exception as exc:
