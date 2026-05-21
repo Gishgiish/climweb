@@ -106,8 +106,18 @@ User = get_user_model()
 try:
     site_hostname = os.environ.get('RAILWAY_PUBLIC_DOMAIN', os.environ.get('CLIMWEB_PUBLIC_DOMAIN', 'climweb-production.up.railway.app'))
 
-    # Aggressive: remove any existing sites so we start with a clean slate
-    Site.objects.all().delete()
+    # Safer behavior: preserve existing sites by default.
+    # To force a reset (dev/one-off only), set FORCE_RESET_WAGTAIL_SITE=true
+    try:
+        force_reset = os.environ.get('FORCE_RESET_WAGTAIL_SITE', '')
+        if str(force_reset).lower() in ('1', 'true', 'yes'):
+            print('FORCE_RESET_WAGTAIL_SITE set: removing existing Wagtail sites')
+            Site.objects.all().delete()
+        else:
+            print('Preserving existing Wagtail sites (set FORCE_RESET_WAGTAIL_SITE=true to reset)')
+    except Exception:
+        # If something goes wrong checking the env var, do not delete sites
+        print('Warning: error while checking FORCE_RESET_WAGTAIL_SITE; preserving existing sites')
 
     # Homepage detection: slug='home' first, then title match
     # NOTE: Deliberately avoiding depth=2 fallback - that catches default Wagtail page!

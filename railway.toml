@@ -4,7 +4,11 @@ builder = "DOCKERFILE"
 buildCommand = "--target=base"
 
 [deploy]
-healthcheckPath = "/"
+# Use the application's lightweight health endpoint so Railway checks app health
+# directly without invoking a full DB verification which can be heavy under
+# connection-pressure situations. This points Railway to the `public_health_check`
+# view implemented at `/api/_health/`.
+healthcheckPath = "/api/_health/"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 

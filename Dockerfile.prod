@@ -78,7 +78,8 @@ USER $UID:$GID
 # Copy requirements and install Python dependencies into the venv
 COPY --chown=$UID:$GID ./climweb/requirements/base.txt /climweb/requirements/
 RUN python3 -m venv /climweb/venv && \
-    /climweb/venv/bin/pip install --no-cache-dir -r /climweb/requirements/base.txt
+    /climweb/venv/bin/pip install --no-cache-dir -r /climweb/requirements/base.txt && \
+    /climweb/venv/bin/pip install --no-cache-dir GDAL==$(gdal-config --version)
 
 # Copy application code
 COPY --chown=$UID:$GID ./climweb /climweb/climweb
