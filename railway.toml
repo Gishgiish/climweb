@@ -4,7 +4,6 @@ builder = "DOCKERFILE"
 
 
 [deploy]
-startCommand = "gunicorn"
 # Use the application's lightweight health endpoint so Railway checks app health
 # directly without invoking a full DB verification which can be heavy under
 # connection-pressure situations. This points Railway to the `public_health_check`
