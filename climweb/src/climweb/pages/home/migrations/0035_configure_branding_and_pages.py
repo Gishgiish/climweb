@@ -14,11 +14,16 @@ functional production site but are not created by earlier migrations:
   3. ContactPage               — creates a /contact-us/ page under the
      HomePage if one does not already exist.
 
+  4. Essential index pages     — creates NewsIndexPage, PublicationsIndexPage,
+     EventIndexPage, etc. under the HomePage if they do not already exist.
+
 All operations are idempotent: if the target record already has the field
 populated, or if the source file is missing, the step is skipped silently.
+All errors are logged to stdout so they appear in deployment logs.
 """
 
 import os
+import sys
 import traceback
 
 from django.db import migrations
@@ -50,7 +55,7 @@ def _create_wagtail_image(title, src_path):
         from wagtail.images import get_image_model
 
         if not os.path.isfile(src_path):
-            print(f"  [0035] Source file not found, skipping: {src_path}")
+            print(f"  [0035] Source file not found, skipping: {src_path}", flush=True)
             return None
 
         ImageModel = get_image_model()
@@ -64,12 +69,12 @@ def _create_wagtail_image(title, src_path):
             image.file = django_file
             image.save()
 
-        print(f"  [0035] Created Wagtail Image: \"{title}\" (id={image.pk})")
+        print(f"  [0035] Created Wagtail Image: \"{title}\" (id={image.pk})", flush=True)
         return image
 
     except Exception as exc:
-        print(f"  [0035] ERROR creating Wagtail Image for {src_path}: {exc}")
-        traceback.print_exc()
+        print(f"  [0035] ERROR creating Wagtail Image for {src_path}: {exc}", flush=True)
+        traceback.print_exc(file=sys.stdout)
         return None
 
 
@@ -87,15 +92,23 @@ def _assign_logo(apps, schema_editor):
         # Retrieve the default site
         site = Site.objects.filter(is_default_site=True).first()
         if site is None:
-            print("  [0035] No default Site found — skipping logo assignment.")
+            print("  [0035] No default Site found — skipping logo assignment.", flush=True)
             return
 
         # Use the real OrganisationSetting (contrib.settings are site-scoped)
-        from climweb.base.models.site_settings import OrganisationSetting
+        try:
+            from climweb.base.models.site_settings import OrganisationSetting
+        except ImportError as exc:
+            print(f"  [0035] Could not import OrganisationSetting: {exc} — skipping logo.", flush=True)
+            return
+
         org_setting = OrganisationSetting.for_site(site)
 
         if org_setting.logo_id:
-            print(f"  [0035] OrganisationSetting already has a logo (id={org_setting.logo_id}) — skipping.")
+            print(
+                f"  [0035] OrganisationSetting already has a logo (id={org_setting.logo_id}) — skipping.",
+                flush=True,
+            )
             return
 
         image = _create_wagtail_image('AfriClimate Logo', logo_src)
@@ -104,11 +117,11 @@ def _assign_logo(apps, schema_editor):
 
         org_setting.logo = image
         org_setting.save()
-        print(f"  [0035] Assigned logo (image id={image.pk}) to OrganisationSetting.")
+        print(f"  [0035] Assigned logo (image id={image.pk}) to OrganisationSetting.", flush=True)
 
     except Exception as exc:
-        print(f"  [0035] ERROR in _assign_logo: {exc}")
-        traceback.print_exc()
+        print(f"  [0035] ERROR in _assign_logo: {exc}", flush=True)
+        traceback.print_exc(file=sys.stdout)
 
 
 # ---------------------------------------------------------------------------
@@ -117,15 +130,22 @@ def _assign_logo(apps, schema_editor):
 
 def _assign_hero_banner(apps, schema_editor):
     try:
-        from climweb.pages.home.models import HomePage
+        try:
+            from climweb.pages.home.models import HomePage
+        except ImportError as exc:
+            print(f"  [0035] Could not import HomePage: {exc} — skipping hero banner.", flush=True)
+            return
 
         home_page = HomePage.objects.live().first()
         if home_page is None:
-            print("  [0035] No live HomePage found — skipping hero banner assignment.")
+            print("  [0035] No live HomePage found — skipping hero banner assignment.", flush=True)
             return
 
         if home_page.hero_banner_id:
-            print(f"  [0035] HomePage already has a hero_banner (id={home_page.hero_banner_id}) — skipping.")
+            print(
+                f"  [0035] HomePage already has a hero_banner (id={home_page.hero_banner_id}) — skipping.",
+                flush=True,
+            )
         else:
             base_dir = _base_dir()
             images_dir = os.path.join(base_dir, 'media', 'images')
@@ -141,12 +161,15 @@ def _assign_hero_banner(apps, schema_editor):
                     banner_src = os.path.join(images_dir, candidates[0])
 
             if banner_src is None:
-                print(f"  [0035] No hero_banner image found in {images_dir} — skipping banner assignment.")
+                print(
+                    f"  [0035] No hero_banner image found in {images_dir} — skipping banner assignment.",
+                    flush=True,
+                )
             else:
                 image = _create_wagtail_image('AfriClimate Hero Banner', banner_src)
                 if image is not None:
                     home_page.hero_banner = image
-                    print(f"  [0035] Assigned hero_banner (image id={image.pk}) to HomePage.")
+                    print(f"  [0035] Assigned hero_banner (image id={image.pk}) to HomePage.", flush=True)
 
         # Always update hero text if it still has the old placeholder values
         updated_fields = []
@@ -162,11 +185,11 @@ def _assign_hero_banner(apps, schema_editor):
         if updated_fields or not home_page.hero_banner_id:
             home_page.save()
             if updated_fields:
-                print(f"  [0035] Updated HomePage fields: {', '.join(updated_fields)}.")
+                print(f"  [0035] Updated HomePage fields: {', '.join(updated_fields)}.", flush=True)
 
     except Exception as exc:
-        print(f"  [0035] ERROR in _assign_hero_banner: {exc}")
-        traceback.print_exc()
+        print(f"  [0035] ERROR in _assign_hero_banner: {exc}", flush=True)
+        traceback.print_exc(file=sys.stdout)
 
 
 # ---------------------------------------------------------------------------
@@ -175,12 +198,16 @@ def _assign_hero_banner(apps, schema_editor):
 
 def _create_contact_page(apps, schema_editor):
     try:
-        from climweb.pages.home.models import HomePage
-        from climweb.pages.contact.models import ContactPage
+        try:
+            from climweb.pages.home.models import HomePage
+            from climweb.pages.contact.models import ContactPage
+        except ImportError as exc:
+            print(f"  [0035] Could not import models for ContactPage: {exc} — skipping.", flush=True)
+            return
 
         home_page = HomePage.objects.live().first()
         if home_page is None:
-            print("  [0035] No live HomePage found — skipping ContactPage creation.")
+            print("  [0035] No live HomePage found — skipping ContactPage creation.", flush=True)
             return
 
         # Check whether a ContactPage already exists anywhere in the tree
@@ -188,7 +215,8 @@ def _create_contact_page(apps, schema_editor):
             existing = ContactPage.objects.first()
             print(
                 f"  [0035] ContactPage already exists: \"{existing.title}\" "
-                f"(id={existing.pk}, slug={existing.slug!r}) — skipping."
+                f"(id={existing.pk}, slug={existing.slug!r}) — skipping.",
+                flush=True,
             )
             return
 
@@ -212,73 +240,77 @@ def _create_contact_page(apps, schema_editor):
         print(
             f"  [0035] Created ContactPage: \"{contact_page.title}\" "
             f"(id={contact_page.pk}, slug={contact_page.slug!r}) "
-            f"under HomePage (id={home_page.pk})."
+            f"under HomePage (id={home_page.pk}).",
+            flush=True,
         )
 
     except Exception as exc:
-        print(f"  [0035] ERROR in _create_contact_page: {exc}")
-        traceback.print_exc()
+        print(f"  [0035] ERROR in _create_contact_page: {exc}", flush=True)
+        traceback.print_exc(file=sys.stdout)
 
 
 # ---------------------------------------------------------------------------
 # Step 4 – Create essential index pages under HomePage
 # ---------------------------------------------------------------------------
 
-# Each entry: (app_label, model_name, title, slug)
-# app_label is the Django app label (last segment of the app name, or the
-# label attribute defined in AppConfig).
+# Each entry: (module_path, class_name, title, slug)
+# We use direct model imports (not apps.get_model()) so that the real Wagtail
+# model class is used — historical proxies returned by apps.get_model() lack
+# the treebeard methods (add_child, etc.) required to insert pages correctly.
 _ESSENTIAL_PAGES = [
-    ('news',         'NewsIndexPage',         'News & Updates', 'news'),
-    ('publications', 'PublicationsIndexPage', 'Publications',   'publications'),
-    ('events',       'EventIndexPage',        'Events',         'events'),
-    ('services',     'ServiceIndexPage',      'Services',       'services'),
-    ('organisation', 'OrganisationIndexPage', 'Organisations',  'organisations'),
-    ('mediacenter',  'MediaIndexPage',        'Media Center',   'media'),
-    ('glossary',     'GlossaryIndexPage',     'Glossary',       'glossary'),
-    ('cap',          'CapAlertListPage',      'Weather Alerts', 'alerts'),
-    ('flex_page',    'FlexPage',              'About Us',       'about'),
+    ('climweb.pages.news.models',                        'NewsIndexPage',         'News & Updates', 'news'),
+    ('climweb.pages.publications.models',                'PublicationsIndexPage', 'Publications',   'publications'),
+    ('climweb.pages.events.models',                      'EventIndexPage',        'Events',         'events'),
+    ('climweb.pages.services.models',                    'ServiceIndexPage',      'Services',       'services'),
+    ('climweb.pages.organisation_pages.organisation.models', 'OrganisationIndexPage', 'Organisations', 'organisations'),
+    ('climweb.pages.mediacenter.models',                 'MediaIndexPage',        'Media Center',   'media'),
+    ('climweb.pages.glossary.models',                    'GlossaryIndexPage',     'Glossary',       'glossary'),
+    ('climweb.pages.flex_page.models',                   'FlexPage',              'About Us',       'about'),
 ]
 
 
-def _get_page_model(apps, app_label, model_name):
+def _import_model(module_path, class_name):
     """
-    Retrieve a page model class from the Django apps registry.
-    Returns the class or None if the app/model is not registered.
-
-    Using apps.get_model() avoids direct module imports, which can fail
-    when a model's module has unavailable dependencies (e.g. GDAL/osgeo)
-    at migration time.
+    Import *class_name* from *module_path*.
+    Returns the class or None, logging any ImportError to stdout.
     """
     try:
-        return apps.get_model(app_label, model_name)
-    except LookupError:
+        import importlib
+        mod = importlib.import_module(module_path)
+        return getattr(mod, class_name)
+    except (ImportError, AttributeError) as exc:
+        print(f"  [0035] Could not import {module_path}.{class_name}: {exc} — skipping.", flush=True)
         return None
 
 
 def _create_essential_pages(apps, schema_editor):
     try:
-        from climweb.pages.home.models import HomePage
+        try:
+            from climweb.pages.home.models import HomePage
+        except ImportError as exc:
+            print(f"  [0035] Could not import HomePage: {exc} — skipping essential pages.", flush=True)
+            return
 
         home_page = HomePage.objects.live().first()
         if home_page is None:
-            print("  [0035] No live HomePage found — skipping essential pages creation.")
+            print("  [0035] No live HomePage found — skipping essential pages creation.", flush=True)
             return
 
-        for app_label, model_name, title, slug in _ESSENTIAL_PAGES:
+        print(f"  [0035] Creating essential pages under HomePage (id={home_page.pk})...", flush=True)
+
+        for module_path, class_name, title, slug in _ESSENTIAL_PAGES:
             try:
-                PageModel = _get_page_model(apps, app_label, model_name)
+                PageModel = _import_model(module_path, class_name)
                 if PageModel is None:
-                    print(
-                        f"  [0035] Could not find {app_label}.{model_name} in apps registry — skipping."
-                    )
                     continue
 
                 # Skip if a page of this type already exists anywhere in the tree
                 if PageModel.objects.exists():
                     existing = PageModel.objects.first()
                     print(
-                        f"  [0035] {model_name} already exists: "
-                        f"\"{existing.title}\" (id={existing.pk}, slug={existing.slug!r}) — skipping."
+                        f"  [0035] {class_name} already exists: "
+                        f"\"{existing.title}\" (id={existing.pk}, slug={existing.slug!r}) — skipping.",
+                        flush=True,
                     )
                     continue
 
@@ -286,7 +318,8 @@ def _create_essential_pages(apps, schema_editor):
                 if home_page.get_children().filter(slug=slug).exists():
                     print(
                         f"  [0035] A child page with slug={slug!r} already exists "
-                        f"under HomePage — skipping {model_name}."
+                        f"under HomePage — skipping {class_name}.",
+                        flush=True,
                     )
                     continue
 
@@ -298,17 +331,18 @@ def _create_essential_pages(apps, schema_editor):
                 )
                 home_page.add_child(instance=page)
                 print(
-                    f"  [0035] Created {model_name}: \"{page.title}\" "
-                    f"(id={page.pk}, slug={page.slug!r}) under HomePage (id={home_page.pk})."
+                    f"  [0035] Created {class_name}: \"{page.title}\" "
+                    f"(id={page.pk}, slug={page.slug!r}) under HomePage (id={home_page.pk}).",
+                    flush=True,
                 )
 
             except Exception as exc:
-                print(f"  [0035] ERROR creating page for {app_label}.{model_name!r}: {exc}")
-                traceback.print_exc()
+                print(f"  [0035] ERROR creating {class_name} (slug={slug!r}): {exc}", flush=True)
+                traceback.print_exc(file=sys.stdout)
 
     except Exception as exc:
-        print(f"  [0035] ERROR in _create_essential_pages: {exc}")
-        traceback.print_exc()
+        print(f"  [0035] ERROR in _create_essential_pages: {exc}", flush=True)
+        traceback.print_exc(file=sys.stdout)
 
 
 # ---------------------------------------------------------------------------
@@ -316,12 +350,12 @@ def _create_essential_pages(apps, schema_editor):
 # ---------------------------------------------------------------------------
 
 def configure_branding_and_pages(apps, schema_editor):
-    print("[0035] configure_branding_and_pages — start")
+    print("[0035] configure_branding_and_pages — start", flush=True)
     _assign_logo(apps, schema_editor)
     _assign_hero_banner(apps, schema_editor)
     _create_contact_page(apps, schema_editor)
     _create_essential_pages(apps, schema_editor)
-    print("[0035] configure_branding_and_pages — done")
+    print("[0035] configure_branding_and_pages — done", flush=True)
 
 
 def reverse_configure_branding_and_pages(apps, schema_editor):

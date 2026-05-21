@@ -277,6 +277,10 @@ source /climweb/plugins/utils.sh
 
 setup_otel_vars
 
+# Set matplotlib to use the non-interactive Agg backend to avoid font-manager
+# rebuild errors with matplotlib 3.9.x in headless/container environments.
+export MPLBACKEND=Agg
+
 echo "Inspecting Django DB engine and DATABASE_URL (sanitized)..."
 # Ensure LD_LIBRARY_PATH includes common system library directory used by GDAL
 export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}
