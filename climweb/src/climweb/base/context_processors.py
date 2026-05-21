@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import DatabaseError, OperationalError
 
 from climweb.base.models import Theme
 
@@ -21,5 +22,8 @@ def theme(request):
             'border_radius': f"{d_theme.border_radius * 0.06}em",
             'box_shadow': f"elevation-{d_theme.box_shadow}",
         }
-    except ObjectDoesNotExist:
+    except (ObjectDoesNotExist, DatabaseError, OperationalError):
+        # If the DB is down or a DB error occurs, fall back to defaults so
+        # template rendering and error handlers do not trigger additional DB
+        # access and cause cascading failures.
         return default_theme

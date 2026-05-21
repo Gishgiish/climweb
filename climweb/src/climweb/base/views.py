@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.core.cache import cache
+from django.http import HttpResponseServerError
+from django.template import loader
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.utils.translation import gettext as _
@@ -12,10 +14,15 @@ from .forms import CMSUpgradeForm
 
 
 def handler500(request):
-    context = {}
-    response = render(request, "500.html", context=context)
-    response.status_code = 500
-    return response
+    """Return a 500 error response without triggering DB-dependent context processors."""
+    try:
+        template = loader.get_template("500.html")
+        # Render with an empty context to bypass context processors
+        content = template.render({})
+    except Exception:
+        content = "<h1>Server Error (500)</h1><p>Please try again later.</p>"
+    
+    return HttpResponseServerError(content)
 
 
 def humans(request):

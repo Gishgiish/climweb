@@ -85,8 +85,11 @@ db_config.setdefault('OPTIONS', {})
 db_config['OPTIONS']['sslmode'] = 'disable'
 db_config['OPTIONS']['connect_timeout'] = 10
 
-# Set connection age for performance
-db_config['CONN_MAX_AGE'] = 600
+# Set connection age for performance. Make configurable via env var so we can
+# lower it on hosted platforms with tight connection limits (e.g. Railway).
+db_config['CONN_MAX_AGE'] = int(os.environ.get('DB_CONNECTION_MAX_AGE', '60'))
+# Enable Django's DB health checks integration when supported by the engine.
+db_config['CONN_HEALTH_CHECKS'] = True
 
 DATABASES = {
     'default': db_config

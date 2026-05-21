@@ -124,6 +124,16 @@ else:
     print('matplotlib not installed; skipping fontlist rebuild')
 PY
 
+
+# Development stage (non-final). Placed before the final production stage
+# so the `base` stage remains the default final image when no --target is
+# specified. This allows local builds without `--target=base` to produce the
+# production-ready image by default.
+FROM base as dev
+USER $UID:$GID
+ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.dev'
+CMD ["django-dev-no-attach"]
+
 ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/climweb/climweb/docker/docker-entrypoint.sh"]
 
 # Ensure venv is first on PATH at container runtime
@@ -135,8 +145,3 @@ HEALTHCHECK --interval=1m --timeout=10s --start-period=30s --retries=3 \
     CMD /climweb/venv/bin/python -m climweb.scripts.verify_db >/dev/null 2>&1 || exit 1
 
 CMD ["gunicorn", "climweb.config.wsgi:application", "--bind", "0.0.0.0:8000", "--log-file", "-"]
-
-FROM base as dev
-USER $UID:$GID
-ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.dev'
-CMD ["django-dev-no-attach"]

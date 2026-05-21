@@ -248,7 +248,7 @@ setup_otel_vars(){
 if [[ -z "${1:-}" ]]; then
     # Default to gunicorn in production containers to ensure the service
     # always starts when no explicit command is provided.
-    if [[ "${DJANGO_SETTINGS_MODULE:-}" == *"prod"* ]] || [[ "${CLIMWEB_DEPLOYMENT_ENV:-}" == "production" ]]; then
+    if [[ "${DJANGO_SETTINGS_MODULE:-}" == *"prod"* ]] || [[ "${DJANGO_SETTINGS_MODULE:-}" == *"production"* ]] || [[ "${CLIMWEB_DEPLOYMENT_ENV:-}" == "production" ]]; then
         set -- gunicorn
     else
         echo "Must provide arguments to docker-entrypoint.sh"
