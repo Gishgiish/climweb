@@ -13,6 +13,15 @@ import dj_database_url
 import django.conf.locale
 import environ
 
+# Use the non-interactive Agg backend for matplotlib to avoid font-manager
+# rebuild errors (e.g. "module 'matplotlib.font_manager' has no attribute
+# '_rebuild'") that appear with matplotlib 3.9.x in headless environments.
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+except ImportError:
+    pass
+
 from climweb import VERSION
 from climweb.config.telemetry.utils import otel_is_enabled
 
@@ -266,8 +275,8 @@ ASGI_APPLICATION = "climweb.config.asgi.application"
 
 DB_ENGINE = "climweb.config.db_engine"
 
-DB_CONNECTION_MAX_AGE = env.int("DB_CONNECTION_MAX_AGE", default=0)
-DB_CONN_HEALTH_CHECKS = env.bool("DB_CONN_HEALTH_CHECKS", default=False)
+DB_CONNECTION_MAX_AGE = env.int("DB_CONNECTION_MAX_AGE", default=60)
+DB_CONN_HEALTH_CHECKS = env.bool("DB_CONN_HEALTH_CHECKS", default=True)
 DB_DISABLE_SERVER_SIDE_CURSORS = env.bool("DB_DISABLE_SERVER_SIDE_CURSORS", default=False)
 DB_SSL_REQUIRE = env.bool("DB_SSL_REQUIRE", default=False)
 
@@ -280,6 +289,23 @@ DATABASES = {
         ssl_require=DB_SSL_REQUIRE,
     )
 }
+
+# Add connection options to all database configs to prevent connection storms
+# and enforce a statement timeout that prevents runaway queries from holding
+# connections open indefinitely.
+if DATABASES.get("default"):
+    DATABASES["default"].setdefault("OPTIONS", {})
+    DATABASES["default"]["OPTIONS"].setdefault("connect_timeout", 10)
+    DATABASES["default"]["OPTIONS"].setdefault(
+        "options", "-c statement_timeout=30000"
+    )
+
+# When running under Gunicorn (multiple workers), keep CONN_MAX_AGE short so
+# each worker releases connections promptly and we stay within PostgreSQL's
+# max_connections limit.
+if os.environ.get("USE_GUNICORN") or os.environ.get("GUNICORN_NUM_OF_WORKERS"):
+    DATABASES["default"]["CONN_MAX_AGE"] = env.int("DB_CONNECTION_MAX_AGE", default=60)
+    DATABASES["default"]["ATOMIC_REQUESTS"] = False
 
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 DBBACKUP_STORAGE_OPTIONS = {'location': os.path.join(BASE_DIR, "backup")}
@@ -550,9 +576,15 @@ ONLINE_SHARE_CONFIG = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+_NEXTJS_SERVER_URL = env.str("NEXTJS_SERVER_URL", default="")
+
 NEXTJS_SETTINGS = {
-    "nextjs_server_url": env.str("NEXTJS_SERVER_URL", default=""),
+    "nextjs_server_url": _NEXTJS_SERVER_URL,
+    "timeout": 30,
 }
+
+if not _NEXTJS_SERVER_URL:
+    print("[WARNING] NEXTJS_SERVER_URL is not set — MapViewer will be disabled")
 
 FORCE_SCRIPT_NAME = env.str("FORCE_SCRIPT_NAME", default="")
 
