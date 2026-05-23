@@ -141,7 +141,9 @@ ENV PATH="/climweb/venv/bin:$PATH"
 # Standardized production settings module name
 ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.production'
 
+# Use lightweight HTTP health endpoint for container healthchecks to avoid
+# performing heavy DB/PostGIS checks which can exhaust DB connections.
 HEALTHCHECK --interval=1m --timeout=10s --start-period=30s --retries=3 \
-    CMD /climweb/venv/bin/python -m climweb.scripts.verify_db >/dev/null 2>&1 || exit 1
+    CMD /usr/bin/curl -fsS http://127.0.0.1:8000/api/_health/ >/dev/null 2>&1 || exit 1
 
 CMD ["gunicorn", "climweb.config.wsgi:application", "--bind", "0.0.0.0:8000", "--log-file", "-"]

@@ -216,6 +216,18 @@ run_server() {
         WORKERS=2
     fi
 
+    # Optional Gunicorn tuning via env vars
+    GUNICORN_THREADS=${GUNICORN_THREADS:-}
+    GUNICORN_MAX_REQUESTS=${GUNICORN_MAX_REQUESTS:-}
+
+    EXTRA_GUNICORN_ARGS=()
+    if [ -n "$GUNICORN_THREADS" ]; then
+        EXTRA_GUNICORN_ARGS+=(--threads "$GUNICORN_THREADS")
+    fi
+    if [ -n "$GUNICORN_MAX_REQUESTS" ]; then
+        EXTRA_GUNICORN_ARGS+=(--max-requests "$GUNICORN_MAX_REQUESTS")
+    fi
+
     exec gunicorn --workers="$WORKERS" \
         --worker-tmp-dir "${TMPDIR:-/dev/shm}" \
         --log-file=- \
@@ -223,6 +235,7 @@ run_server() {
         --capture-output \
         -b "0.0.0.0:${CLIMWEB_PORT}" \
         --log-level="${CLIMWEB_LOG_LEVEL}" \
+        "${EXTRA_GUNICORN_ARGS[@]}" \
         "${STARTUP_ARGS[@]}" \
         "${@:2}"
 }
@@ -290,10 +303,20 @@ echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 python -c "from osgeo import gdal; print('GDAL version:', getattr(gdal, '__version__', 'unknown'))" || echo "Warning: unable to import GDAL to print version"
 
 # Run verify script (this will call django.setup() before DB checks)
-python -m climweb.scripts.verify_db || {
-    echo "verify_db failed; aborting startup"
-    exit 2
-}
+# This is an expensive PostGIS/DB check that can increase DB connections.
+# Make it opt-in via VERIFY_DB_ON_STARTUP (default: false) so platforms
+# with tight connection limits (Railway) don't get overwhelmed by health
+# probes or startup concurrency.
+VERIFY_DB_ON_STARTUP=${VERIFY_DB_ON_STARTUP:-false}
+if [ "${VERIFY_DB_ON_STARTUP,,}" = "true" ] || [ "${VERIFY_DB_ON_STARTUP}" = "1" ]; then
+    echo "Running verify_db (VERIFY_DB_ON_STARTUP=${VERIFY_DB_ON_STARTUP})"
+    if ! python -m climweb.scripts.verify_db; then
+        echo "verify_db failed; aborting startup"
+        exit 2
+    fi
+else
+    echo "Skipping verify_db on startup (set VERIFY_DB_ON_STARTUP=true to enable)"
+fi
 
 case "$1" in
 django-dev)

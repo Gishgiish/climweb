@@ -45,6 +45,14 @@ SECURE_BROWSER_XSS_FILTER = True
 MIDDLEWARE.insert(MIDDLEWARE.index('django.middleware.security.SecurityMiddleware') + 1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Add DB-resilient middleware early so fragile endpoints can return a 503
+# instead of blowing up the whole site during DB outages (e.g. /mapviewer/).
+try:
+    MIDDLEWARE.insert(0, 'climweb.config.middleware.db_resilient.DBFailureResilientMiddleware')
+except Exception:
+    # If MIDDLEWARE isn't mutable for some reason, fall back to appending.
+    MIDDLEWARE.append('climweb.config.middleware.db_resilient.DBFailureResilientMiddleware')
+
 # Database configuration from DATABASE_URL
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -87,7 +95,7 @@ db_config['OPTIONS']['connect_timeout'] = 10
 
 # Set connection age for performance. Make configurable via env var so we can
 # lower it on hosted platforms with tight connection limits (e.g. Railway).
-db_config['CONN_MAX_AGE'] = int(os.environ.get('DB_CONNECTION_MAX_AGE', '60'))
+db_config['CONN_MAX_AGE'] = int(os.environ.get('DB_CONNECTION_MAX_AGE', '0'))
 # Enable Django's DB health checks integration when supported by the engine.
 db_config['CONN_HEALTH_CHECKS'] = True
 
