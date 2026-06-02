@@ -1,5 +1,6 @@
 from django.http import HttpResponseServerError
 from django.db import DatabaseError, OperationalError
+import asyncio
 
 
 class DBFailureResilientMiddleware:
@@ -14,17 +15,33 @@ class DBFailureResilientMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        self._is_coroutine = asyncio.iscoroutinefunction(get_response)
 
     def __call__(self, request):
+        if self._is_coroutine:
+            return self._call_async(request)
+        return self._call_sync(request)
+
+    def _call_sync(self, request):
         try:
             return self.get_response(request)
-        except (OperationalError, DatabaseError) as exc:
+        except (OperationalError, DatabaseError):
             path = (request.path or "").lower()
-            # Only return a safe 503 for the mapviewer path (and its subpaths).
             if path.startswith("/mapviewer"):
                 return HttpResponseServerError(
                     "Service temporarily unavailable due to database issues. Please try again later.",
                     content_type="text/plain",
                 )
-            # For other paths, re-raise so other handlers can manage it.
+            raise
+
+    async def _call_async(self, request):
+        try:
+            return await self.get_response(request)
+        except (OperationalError, DatabaseError):
+            path = (request.path or "").lower()
+            if path.startswith("/mapviewer"):
+                return HttpResponseServerError(
+                    "Service temporarily unavailable due to database issues. Please try again later.",
+                    content_type="text/plain",
+                )
             raise

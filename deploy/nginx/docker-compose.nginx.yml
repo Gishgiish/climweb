@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: climweb_nginx
+    ports:
+      - "8443:443"
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      - climweb_test_net
+
+  redis:
+    image: redis:6-alpine
+    container_name: climweb_redis_for_test
+    networks:
+      - climweb_test_net
+
+networks:
+  climweb_test_net:
+    external: true

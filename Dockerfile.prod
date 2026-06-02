@@ -61,6 +61,17 @@ ARG DOCKER_COMPOSE_WAIT_VERSION=2.12.1
 ADD https://github.com/ufoscout/docker-compose-wait/releases/download/${DOCKER_COMPOSE_WAIT_VERSION}/wait /wait
 RUN chmod +x /wait
 
+ENV WAIT_TIMEOUT=120
+ENV WAIT_SLEEP=2
+
+# Production runtime defaults: keep verify_db off by default to avoid
+# extra DB connections during startup; set conservative Gunicorn defaults
+# that limit concurrent DB connections per container.
+ENV VERIFY_DB_ON_STARTUP=false
+ENV GUNICORN_NUM_OF_WORKERS=2
+ENV GUNICORN_THREADS=4
+ENV GUNICORN_MAX_REQUESTS=1000
+
 # Create directories and set permissions BEFORE switching user
 RUN mkdir -p /climweb/web /climweb/plugins /climweb/tmp /root/.cache/pip && \
     chown -R $UID:$GID /climweb /root/.cache/pip

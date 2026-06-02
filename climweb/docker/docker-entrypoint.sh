@@ -79,24 +79,27 @@ run_setup_commands_if_configured() {
         /climweb/climweb/src/climweb/manage.py migrate --noinput
     fi
 
-    # configure wagtail site
-    /climweb/climweb/src/climweb/manage.py configure_site
-
-        # collect staticfiles
+    # collect staticfiles
     if [ "$COLLECT_STATICFILES_ON_STARTUP" = "true" ]; then
         echo "python /climweb/climweb/src/climweb/manage.py collectstatic --noinput --verbosity=0"
         /climweb/climweb/src/climweb/manage.py collectstatic --noinput --verbosity=0
     fi
+    # initialize geomanager, wagtail site configuration and superuser
+    # are optional startup DB tasks. To avoid touching the DB on container
+    # start (recommended for platforms with tight connection limits),
+    # set STARTUP_DB_TASKS=false. By default it follows MIGRATE_ON_STARTUP.
+    STARTUP_DB_TASKS=${STARTUP_DB_TASKS:-$MIGRATE_ON_STARTUP}
 
-    # initialize geomanager
-    /climweb/climweb/src/climweb/manage.py initialize_geomanager
+    if [ "${STARTUP_DB_TASKS,,}" = "true" ] || [ "${STARTUP_DB_TASKS}" = "1" ]; then
+        # initialize geomanager
+        /climweb/climweb/src/climweb/manage.py initialize_geomanager
 
-    # reset cms upgrade status (do not fail startup if cache/redis unavailable)
-    /climweb/climweb/src/climweb/manage.py reset_cms_upgrade_status || echo "Warning: reset_cms_upgrade_status failed; continuing"
+        # reset cms upgrade status (do not fail startup if cache/redis unavailable)
+        /climweb/climweb/src/climweb/manage.py reset_cms_upgrade_status || echo "Warning: reset_cms_upgrade_status failed; continuing"
 
-    # Configure Wagtail Site and optional superuser. Use runtime port so
-    # host+port resolution matches the server (important on Railway).
-    /climweb/venv/bin/python /climweb/climweb/src/climweb/manage.py shell <<'PYEOF' || echo "Warning: site configuration failed; continuing"
+        # Configure Wagtail Site and optional superuser. Use runtime port so
+        # host+port resolution matches the server (important on Railway).
+        /climweb/venv/bin/python /climweb/climweb/src/climweb/manage.py shell <<'PYEOF' || echo "Warning: site configuration failed; continuing"
 import os, traceback
 from wagtail.models import Site, Page
 from django.contrib.auth import get_user_model
@@ -168,6 +171,14 @@ except Exception:
     print("ERROR: Failed to create superuser:")
     traceback.print_exc()
 PYEOF
+
+    # Run idempotent homepage/site creation as a separate step (safer than
+    # running complex Wagtail tree operations during migrations). This can be
+    # run by platform tooling after migrations or automatically here when
+    # STARTUP_DB_TASKS is enabled.
+    /climweb/climweb/src/climweb/manage.py create_homepage || echo "Warning: create_homepage failed; continuing"
+
+    fi
 
     # watch for new files in the geomanager auto-ingest data dir
     if [ "$WATCH_GEOMANAGER_DATA_DIR" = "true" ]; then

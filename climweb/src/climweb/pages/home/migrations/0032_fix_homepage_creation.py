@@ -11,6 +11,10 @@ def fix_homepage_and_site(apps, schema_editor):
     This migration is idempotent: if a valid HomePage already exists and the
     Site already points to it, it does nothing.
     """
+    # No-op: move runtime homepage/site fixes to management command
+    print('NOTE: fix_homepage_and_site is a no-op; run manage.py create_homepage')
+    return
+
     try:
         Page = apps.get_model('wagtailcore', 'Page')
         Site = apps.get_model('wagtailcore', 'Site')

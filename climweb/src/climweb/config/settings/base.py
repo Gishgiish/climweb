@@ -578,6 +578,13 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 _NEXTJS_SERVER_URL = env.str("NEXTJS_SERVER_URL", default="")
 
+# Provide a sane local default for development/docker-compose environments
+# so local smoke-tests can exercise MapViewer without requiring manual env
+# configuration. Production deploys (Railway) should set `NEXTJS_SERVER_URL`
+# explicitly to the public MapViewer URL.
+if not _NEXTJS_SERVER_URL and env.str("CLIMWEB_DEPLOYMENT_ENV", default="dev") == "dev":
+    _NEXTJS_SERVER_URL = "http://climweb_mapviewer_dev:3000"
+
 NEXTJS_SETTINGS = {
     "nextjs_server_url": _NEXTJS_SERVER_URL,
     "timeout": 30,

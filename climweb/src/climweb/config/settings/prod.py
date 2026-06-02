@@ -90,14 +90,31 @@ db_config['ENGINE'] = DB_ENGINE
 
 # EXPLICITLY force sslmode to disable to override any URL params or defaults
 db_config.setdefault('OPTIONS', {})
-db_config['OPTIONS']['sslmode'] = 'disable'
-db_config['OPTIONS']['connect_timeout'] = 10
+# Only apply Postgres-specific connection options when using a Postgres-like engine.
+engine_lc = db_config.get('ENGINE', '').lower()
+if 'postgres' in engine_lc or 'postgis' in engine_lc:
+    db_config['OPTIONS']['sslmode'] = 'disable'
+    db_config['OPTIONS']['connect_timeout'] = 10
 
 # Set connection age for performance. Make configurable via env var so we can
 # lower it on hosted platforms with tight connection limits (e.g. Railway).
 db_config['CONN_MAX_AGE'] = int(os.environ.get('DB_CONNECTION_MAX_AGE', '0'))
 # Enable Django's DB health checks integration when supported by the engine.
 db_config['CONN_HEALTH_CHECKS'] = True
+
+# If Railway provides a PgBouncer pooled endpoint, prefer it. Set
+# `RAILWAY_PGBOUNCER_URL` to the pooled URL; otherwise use DATABASE_URL.
+PGBOUNCER_URL = os.environ.get('RAILWAY_PGBOUNCER_URL') or os.environ.get('PGBOUNCER_URL')
+if PGBOUNCER_URL:
+    # Re-parse the pooled URL to ensure options like CONN_MAX_AGE are applied
+    pooled_cfg = dj_database_url.parse(PGBOUNCER_URL, engine=DB_ENGINE)
+    pooled_cfg['ENGINE'] = db_config['ENGINE']
+    pooled_cfg.setdefault('OPTIONS', {})
+    pooled_cfg['CONN_MAX_AGE'] = db_config.get('CONN_MAX_AGE', 60)
+    pooled_cfg['CONN_HEALTH_CHECKS'] = db_config.get('CONN_HEALTH_CHECKS', True)
+    DATABASES['default'] = pooled_cfg
+else:
+    DATABASES['default'] = db_config
 
 DATABASES = {
     'default': db_config

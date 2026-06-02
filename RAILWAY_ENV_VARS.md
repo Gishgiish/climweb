@@ -12,6 +12,7 @@ Recommended / Wagtail setup:
 - `DJANGO_SUPERUSER_EMAIL`
 - `DJANGO_SUPERUSER_PASSWORD`
 - `RAILWAY_PUBLIC_DOMAIN` — used by entrypoint to set Wagtail `Site` hostname (e.g., `climweb-production.up.railway.app`)
+ - `NEXTJS_SERVER_URL` — public URL of the deployed MapViewer (e.g., `https://mapviewer.yoursite.com`). This must be set in Railway's environment variables so `django_nextjs` can contact the Next.js server. If unset, MapViewer will be disabled and pages will return 503.
 
 Database and connection tuning (optional):
 
