@@ -14,7 +14,13 @@ class Command(BaseCommand):
         User = get_user_model()
 
         # Attempt to load fixture from repository root: climweb/wagtail_prod_sync.json
-        fixture_path = os.path.normpath(os.path.join(settings.BASE_DIR, '..', 'wagtail_prod_sync.json'))
+        # BASE_DIR is climweb/src/climweb (inside the container: /climweb/climweb/src/climweb),
+        # so we need to go up two levels to reach /climweb/climweb/wagtail_prod_sync.json.
+        # Also check the absolute container path as a fallback.
+        fixture_path = os.path.normpath(os.path.join(settings.BASE_DIR, '..', '..', 'wagtail_prod_sync.json'))
+        if not os.path.exists(fixture_path):
+            # Fallback: absolute container path (in case BASE_DIR resolution differs)
+            fixture_path = '/climweb/climweb/wagtail_prod_sync.json'
         if os.path.exists(fixture_path):
             try:
                 self.stdout.write(f'Loading fixture: {fixture_path}')
