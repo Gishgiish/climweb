@@ -135,22 +135,15 @@ else:
     print('matplotlib not installed; skipping fontlist rebuild')
 PY
 
-
-# Development stage (non-final). Placed before the final production stage
-# so the `base` stage remains the default final image when no --target is
-# specified. This allows local builds without `--target=base` to produce the
-# production-ready image by default.
-FROM base as dev
-USER $UID:$GID
-ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.dev'
-CMD ["django-dev-no-attach"]
-
-ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/climweb/climweb/docker/docker-entrypoint.sh"]
-
 # Ensure venv is first on PATH at container runtime
 ENV PATH="/climweb/venv/bin:$PATH"
 # Standardized production settings module name
 ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.production'
+
+# Entrypoint runs migrations, collectstatic, and site setup before starting
+# the application server. This must be on the base (production) stage so that
+# Railway's default `gunicorn` CMD is wrapped by the entrypoint script.
+ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/climweb/climweb/docker/docker-entrypoint.sh"]
 
 # Use lightweight HTTP health endpoint for container healthchecks to avoid
 # performing heavy DB/PostGIS checks which can exhaust DB connections.
@@ -158,3 +151,9 @@ HEALTHCHECK --interval=1m --timeout=10s --start-period=30s --retries=3 \
     CMD /usr/bin/curl -fsS http://127.0.0.1:8000/api/_health/ >/dev/null 2>&1 || exit 1
 
 CMD ["gunicorn"]
+
+# Development stage — inherits entrypoint from base, overrides CMD and settings.
+FROM base as dev
+USER $UID:$GID
+ENV DJANGO_SETTINGS_MODULE='climweb.config.settings.dev'
+CMD ["django-dev-no-attach"]
