@@ -67,3 +67,16 @@ coverage.xml
 *.sql
 .tar
 *.tar
+
+# API Keys and Secrets
+google-api-key.json
+google-credentials.json
+google-service-account.json
+*-google-*.json
+mapbox-token.txt
+mapbox-secret.txt
+.mapbox-token
+*-mapbox-*.txt
+*-api-key*
+*-secret*
+*-token*
