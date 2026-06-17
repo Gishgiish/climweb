@@ -78,6 +78,16 @@ run_setup_commands_if_configured() {
     echo "python /climweb/climweb/src/climweb/manage.py migrate"
     /climweb/climweb/src/climweb/manage.py migrate --noinput
 
+    # Load fixture explicitly before configure_site so that user accounts and
+    # any other fixture data are present when configure_site runs.
+    FIXTURE_PATH="/climweb/climweb/wagtail_prod_sync.json"
+    if [ -f "$FIXTURE_PATH" ]; then
+        echo "Loading fixture from $FIXTURE_PATH..."
+        /climweb/climweb/src/climweb/manage.py loaddata "$FIXTURE_PATH" || echo "Warning: Failed to load fixture from $FIXTURE_PATH"
+    else
+        echo "Fixture file not found at $FIXTURE_PATH; skipping loaddata"
+    fi
+
     # configure_site — runs after migrate so wagtailcore_site and all other
     # tables are guaranteed to exist.
     /climweb/climweb/src/climweb/manage.py configure_site || echo "Warning: configure_site failed; continuing"
